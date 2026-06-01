@@ -125,8 +125,9 @@ def fetch_stock_universe():
                 cap = item.get("f20", 0)  # 流通市值（元）
                 name = item.get("f14", "")
 
-                # 跳过退市/ST
-                if "PT" in name or "*ST" in name or cap == 0:
+                # 跳过退市/ST/科创板(688)
+                code = item.get("f12", "")
+                if "PT" in name or "*ST" in name or cap == 0 or code.startswith("688"):
                     continue
 
                 if cap >= MIN_CAP:
@@ -568,8 +569,11 @@ def _get_market_prefix(code):
     return "sh" if code.startswith(("6", "9")) else "sz"
 
 
-def _fetch_single_stock_klines(code, market_prefix, days=25):
-    """获取单只个股的日K线数据（腾讯 K 线 API）"""
+def _fetch_single_stock_klines(code, market_prefix, days=45):
+    """获取单只个股的日K线数据（腾讯 K 线 API）
+
+    默认请求 45 个交易日，足够计算 5/10/20/40 日四个周期的区间涨跌幅。
+    """
     url = "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get"
     params = {"param": f"{market_prefix}{code},day,,,{days},qfq"}
     headers = {"User-Agent": "Mozilla/5.0"}
@@ -601,7 +605,7 @@ def fetch_period_returns_via_klines(stocks, max_workers=10):
     valid=False 表示数据不足以计算（新股或API失败）
     """
     print(f"\n[STOCK] Step 4.5: 通过 K 线 API 计算准确周期涨跌幅...")
-    print(f"  并发线程: {max_workers} | 股票数: {len(stocks)}")
+    print(f"  并发线程: {max_workers} | 股票数: {len(stocks)} | 周期: 5/10/20/40日")
 
     results = {}
     completed = 0
@@ -612,34 +616,43 @@ def fetch_period_returns_via_klines(stocks, max_workers=10):
         for s in stocks:
             code = s["code"]
             prefix = _get_market_prefix(code)
-            futures[executor.submit(_fetch_single_stock_klines, code, prefix, 25)] = code
+            futures[executor.submit(_fetch_single_stock_klines, code, prefix, 45)] = code
 
         for future in as_completed(futures):
             code, closes = future.result()
             completed += 1
 
-            if len(closes) >= 25:
-                # 有足够K线数据（≥25条）→ 准确计算周期涨幅
-                # 25 条确保 20 日涨幅的参考点距离上市日至少 4 个交易日，排除 IPO 首日噪音
+            if len(closes) >= 45:
+                # ≥45条K线：可计算全部 4 个周期（5/10/20/40日）
+                # 45 条确保 40 日涨幅的参考点距离上市日至少 4 个交易日，排除 IPO 首日噪音
                 current = closes[-1]
                 ret_5d = round((current / closes[-6] - 1) * 100, 2) if closes[-6] != 0 else 0
                 ret_10d = round((current / closes[-11] - 1) * 100, 2) if closes[-11] != 0 else 0
                 ret_20d = round((current / closes[-21] - 1) * 100, 2) if closes[-21] != 0 else 0
-                results[code] = {"ret_5d": ret_5d, "ret_10d": ret_10d, "ret_20d": ret_20d, "valid": True}
+                ret_40d = round((current / closes[-41] - 1) * 100, 2) if closes[-41] != 0 else 0
+                results[code] = {"ret_5d": ret_5d, "ret_10d": ret_10d, "ret_20d": ret_20d, "ret_40d": ret_40d, "valid": True, "has_40d": True}
+            elif len(closes) >= 25:
+                # 25-44条K线：可计算 5/10/20日，但不够算 40 日
+                current = closes[-1]
+                ret_5d = round((current / closes[-6] - 1) * 100, 2) if closes[-6] != 0 else 0
+                ret_10d = round((current / closes[-11] - 1) * 100, 2) if closes[-11] != 0 else 0
+                ret_20d = round((current / closes[-21] - 1) * 100, 2) if closes[-21] != 0 else 0
+                results[code] = {"ret_5d": ret_5d, "ret_10d": ret_10d, "ret_20d": ret_20d, "ret_40d": 0, "valid": True, "has_40d": False}
             elif len(closes) >= 6:
                 # 只有部分数据（可能是新股），只计算短周期
                 current = closes[-1]
                 ret_5d = round((current / closes[-6] - 1) * 100, 2) if closes[-6] != 0 else 0
                 ret_10d = round((current / closes[-1] - 1) * 100, 2) if len(closes) >= 11 and closes[-11] != 0 else 0
-                results[code] = {"ret_5d": ret_5d, "ret_10d": ret_10d, "ret_20d": 0, "valid": False}
+                results[code] = {"ret_5d": ret_5d, "ret_10d": ret_10d, "ret_20d": 0, "ret_40d": 0, "valid": False, "has_40d": False}
             else:
-                results[code] = {"ret_5d": 0, "ret_10d": 0, "ret_20d": 0, "valid": False}
+                results[code] = {"ret_5d": 0, "ret_10d": 0, "ret_20d": 0, "ret_40d": 0, "valid": False, "has_40d": False}
 
             if completed % 500 == 0:
                 print(f"  已处理 {completed}/{total} 只...")
 
     valid_count = sum(1 for v in results.values() if v["valid"])
-    print(f"  [OK] {valid_count}/{total} 只有效K线数据（≥25个交易日）")
+    has_40d_count = sum(1 for v in results.values() if v.get("has_40d"))
+    print(f"  [OK] {valid_count}/{total} 只有效K线数据（≥25日），其中 {has_40d_count} 只可计算40日涨幅")
     return results
 
 
@@ -702,17 +715,24 @@ def _compute_single_period_diag(top30):
 
 
 def _compute_cross_period(rankings):
-    """跨周期分析：持续走强 / 加速 / 减速"""
+    """跨周期分析：持续走强 / 加速 / 减速
+
+    纳入 5/10/20/40 日四个周期维度：
+      - 短周期（5/10/20日）：判断加速/减速/短期爆发
+      - 长周期（40日）：发现慢牛股（20日排名不突出但40日突出）
+    """
     # 各周期代码集合
     codes = {}
-    for period in ["5d", "10d", "20d"]:
+    for period in ["5d", "10d", "20d", "40d"]:
         codes[period] = {s["code"] for s in rankings.get(period, [])}
 
     cross = {
-        "persistent_3periods": [],   # 三周期同时出现
+        "persistent_3periods": [],   # 三周期同时出现（5+10+20）
+        "persistent_4periods": [],   # 四周期同时出现（5+10+20+40）— 最强持续性
         "persistent_2periods": [],   # 两周期同时出现
         "only_5d": [],               # 仅5日出现（新爆发）
         "only_20d": [],              # 仅20日出现（早期强但近期弱）
+        "only_40d": [],              # 仅40日出现（慢牛：长期强但短期不突出）
         "accelerating": [],          # 5d > 10d > 20d（加速中）
         "decelerating": [],          # 5d < 10d < 20d（减速中）
     }
@@ -720,15 +740,19 @@ def _compute_cross_period(rankings):
     # 跨周期出现
     all_3 = codes["5d"] & codes["10d"] & codes["20d"]
     cross["persistent_3periods"] = list(all_3)[:15]
+    all_4 = codes["5d"] & codes["10d"] & codes["20d"] & codes["40d"]
+    cross["persistent_4periods"] = list(all_4)[:15]
     cross["persistent_2periods"] = list(
         (codes["5d"] & codes["10d"]) | (codes["10d"] & codes["20d"]) | (codes["5d"] & codes["20d"])
     )[:20]
     cross["only_5d"] = list(codes["5d"] - codes["10d"] - codes["20d"])[:15]
     cross["only_20d"] = list(codes["20d"] - codes["10d"] - codes["5d"])[:15]
+    # 🔥 仅40日出现：长期牛股但不在短周期Top30 — 这类就是"利通电子型"慢牛
+    cross["only_40d"] = list(codes["40d"] - codes["20d"] - codes["10d"] - codes["5d"])[:20]
 
-    # 加速/减速分析：构建 code → {5d, 10d, 20d} 映射
-    period_ret_map = defaultdict(lambda: {"name": "?", "5d": 0, "10d": 0, "20d": 0, "theme": ""})
-    for period in ["5d", "10d", "20d"]:
+    # 加速/减速分析：构建 code → {5d, 10d, 20d, 40d} 映射
+    period_ret_map = defaultdict(lambda: {"name": "?", "5d": 0, "10d": 0, "20d": 0, "40d": 0, "theme": ""})
+    for period in ["5d", "10d", "20d", "40d"]:
         for s in rankings.get(period, []):
             code = s["code"]
             period_ret_map[code]["name"] = s.get("name", "?")
@@ -879,15 +903,118 @@ def _compute_trajectory_analysis(rankings, kline_returns):
 
     traj_analysis["insights"] = insights
 
+    # === 40日涨幅路径分析 ===
+    # 40日窗口更能捕捉"慢牛股"——这些票在20日窗口排名可能不突出，
+    # 但拉长到40日就很明显（如利通电子型：40日翻倍但20日仅30%+）
+    # 分解为 d1-20（前半段）和 d21-40（后半段=近20日）
+    top40 = rankings.get("40d", [])[:30]
+    trajectories_40d = []
+    for s in top40:
+        code = s["code"]
+        kr = kline_returns.get(code, {})
+        if not kr or not kr.get("has_40d"):
+            continue
+        r40 = kr["ret_40d"]
+        r20 = kr["ret_20d"]
+        if r40 == 0:
+            continue
+        try:
+            # d1-20 = 前半段涨幅；d21-40 = 后半段 = r20（近20日涨幅）
+            ret_d1_20 = round(((1 + r40 / 100) / (1 + r20 / 100) - 1) * 100, 1) if (1 + r20 / 100) != 0 else 0
+        except (ZeroDivisionError, OverflowError):
+            continue
+
+        r_first = ret_d1_20   # 前半段（d1-20）
+        r_second = r20         # 后半段（d21-40）= 近20日涨幅
+
+        # 40日路径分类（比20日路径更简洁：只看前后两段的对比）
+        if r_second < -3 and r40 > 20:
+            traj_40d_type = "高位逆转 🔴"          # 40日涨了不少但近20日在跌
+        elif r_first > r_second * 2 and r_second < 10:
+            traj_40d_type = "前重后轻 📉"          # 大部分涨幅在前半段，后半段接近停滞
+        elif r_second > r_first * 1.5 and r_first > -5:
+            traj_40d_type = "后重前轻 🟡"          # 后半段加速，慢牛转为加速
+        elif abs(r_first - r_second) < 15 and r_first > 0 and r_second > 0:
+            traj_40d_type = "匀速推进 🟢"          # 前后两段均匀，慢牛趋势
+        elif r_first < -5 and r_second > 10:
+            traj_40d_type = "V型反转 🟢"           # 前半段跌后半段涨，弱转强
+        else:
+            traj_40d_type = "混合型"
+
+        trajectories_40d.append({
+            "code": code,
+            "name": s.get("name", "?"),
+            "theme": s.get("theme", ""),
+            "cap_yi": s.get("cap_yi", 0),
+            "ret_40d": round(r40, 1),
+            "ret_20d": round(r20, 1),
+            "decomp": {
+                "d1_20": ret_d1_20,        # 前半段（前20个交易日）
+                "d21_40": round(r20, 1),   # 后半段（近20个交易日）
+            },
+            "trajectory": traj_40d_type,
+        })
+
+    # 40日聚合统计
+    type_counts_40d = defaultdict(int)
+    type_examples_40d = defaultdict(list)
+    for t in trajectories_40d:
+        type_counts_40d[t["trajectory"]] += 1
+        if len(type_examples_40d[t["trajectory"]]) < 3:
+            type_examples_40d[t["trajectory"]].append(
+                f"{t['name']}(40d:{t['ret_40d']:.0f}% 20d:{t['ret_20d']:.0f}%)")
+
+    top20_40d = trajectories_40d[:20]
+
+    traj_40d = {
+        "summary": "、".join(
+            f"{k}{v}只" for k, v in sorted(type_counts_40d.items(), key=lambda x: x[1], reverse=True)),
+        "type_distribution": {k: {"count": v, "examples": type_examples_40d[k]} for k, v in
+                              sorted(type_counts_40d.items(), key=lambda x: x[1], reverse=True)},
+        "top20_trajectories": top20_40d,
+        "total_analyzed": len(trajectories_40d),
+    }
+
+    # 40日关键洞察
+    insights_40d = []
+    front_loaded_40d = type_counts_40d.get("前重后轻 📉", 0)
+    steady_40d = type_counts_40d.get("匀速推进 🟢", 0)
+    back_loaded_40d = type_counts_40d.get("后重前轻 🟡", 0)
+    reversal_40d = type_counts_40d.get("高位逆转 🔴", 0)
+    v_recovery_40d = type_counts_40d.get("V型反转 🟢", 0)
+
+    if steady_40d > 3:
+        insights_40d.append(f"🟢 {steady_40d}只匀速推进(40d)：慢牛趋势健康——这类票在20日窗口可能被忽略")
+    if back_loaded_40d > 3:
+        insights_40d.append(f"🟡 {back_loaded_40d}只后重前轻(40d)：近期加速，慢牛可能正在转为加速段")
+    if front_loaded_40d > 5:
+        insights_40d.append(f"📉 {front_loaded_40d}只前重后轻(40d)：早期涨幅已兑现，近20日动能衰竭")
+    if reversal_40d > 3:
+        insights_40d.append(f"🔴 {reversal_40d}只高位逆转(40d)：40日涨幅为正但近20日转跌，派发进行中")
+    if v_recovery_40d > 2:
+        insights_40d.append(f"🟢 {v_recovery_40d}只V型反转(40d)：前半段跌后半段涨，弱转强确认")
+    if not insights_40d:
+        insights_40d.append("40日路径分布均匀，无极端信号")
+
+    traj_40d["insights"] = insights_40d
+    traj_analysis["trajectory_40d"] = traj_40d
+
     return traj_analysis
 
 
 def _derive_trader_implications(diag, cross, traj=None):
-    """根据诊断数据自动生成三类交易者的策略启示"""
+    """根据诊断数据自动生成三类交易者的策略启示
+
+    纳入 5/10/20/40 日四个周期的诊断数据：
+      - 短周期（5/10/20日）：判断短期动能和情绪
+      - 长周期（40日）：发现慢牛股和长期趋势
+    """
     d20 = diag.get("20d", {})
     d5 = diag.get("5d", {})
+    d40 = diag.get("40d", {})  # 🔥 40日诊断数据
 
     top_ret_20d = d20.get("top_return", 0)
+    top_ret_40d = d40.get("top_return", 0)  # 🔥 40日首涨幅
     cap_dist = d20.get("cap_distribution", {})
     large_pct = cap_dist.get("大票(>500亿)", 0)
     small_pct = cap_dist.get("小票(<80亿)", 0)
@@ -899,6 +1026,11 @@ def _derive_trader_implications(diag, cross, traj=None):
     accel_n = cross.get("accel_count", 0)
     decel_n = cross.get("decel_count", 0)
     persistent_n = len(cross.get("persistent_3periods", []))
+    persistent_4_n = len(cross.get("persistent_4periods", []))  # 🔥 四周期持续
+    only_40d_n = len(cross.get("only_40d", []))  # 🔥 仅40日出现的慢牛
+    # 40日翻倍/大涨统计
+    d40_doubled = d40.get("翻倍(>100%)", 0)
+    d40_big = d40.get("大涨(50-100%)", 0)
 
     # === 机构视角 ===
     if large_pct >= 10:
@@ -964,6 +1096,15 @@ def _derive_trader_implications(diag, cross, traj=None):
             youzi_verdict = "信号不明确，游资应谨慎"
             youzi_action = "【轻仓套利】小仓位打首板套利，不接力。做错立刻走。"
 
+    # === 40日慢牛视角（综合以上判断，额外参考40日长周期数据）===
+    insight_40d = ""
+    if only_40d_n >= 5 and d40_doubled + d40_big >= 3:
+        insight_40d = f"🔥 {only_40d_n}只仅40日Top30的慢牛股（40日内翻倍/大涨{d40_doubled + d40_big}只）——这些票在20日窗口被忽略但长期趋势强劲。关注其40日路径：匀速推进型可低吸，前重后轻型等调整后再看。"
+    elif only_40d_n >= 3:
+        insight_40d = f"🟡 {only_40d_n}只仅40日Top30标的，短期不突出但长期有累积涨幅。需逐个看40日路径判断是否值得关注。"
+    elif top_ret_40d > top_ret_20d * 1.5:
+        insight_40d = f"📊 40日首涨幅({top_ret_40d:.0f}%)远超20日({top_ret_20d:.0f}%)——存在慢牛股在20日窗口外。拉长周期看赚钱效应比短期看到的更强。"
+
     # === 散户视角 ===
     if top_ret_20d > 100:
         sanhu_verdict = "已有翻倍股，追高风险极大"
@@ -978,15 +1119,24 @@ def _derive_trader_implications(diag, cross, traj=None):
         sanhu_verdict = "赚钱效应偏弱，散户应空仓等待"
         sanhu_action = "【空仓等待】弱市下散户最容易亏钱。不抄底、不埋伏、不等反弹。等赚钱效应明确转强再进场。"
 
-    return {
+    result = {
         "机构": {"评估": inst_verdict, "策略": inst_action},
         "游资": {"评估": youzi_verdict, "策略": youzi_action},
         "散户": {"评估": sanhu_verdict, "策略": sanhu_action},
     }
 
+    # 如果有40日慢牛发现，加入额外维度
+    if insight_40d:
+        result["40日慢牛发现"] = insight_40d
+
+    return result
+
 
 def compute_period_rankings(stocks, qt_data, kline_returns=None):
-    """计算 5日/10日/20日 区间涨幅排名 + 诊断框架，输出各周期 Top 30
+    """计算 5日/10日/20日/40日 区间涨幅排名 + 诊断框架，输出各周期 Top 30
+
+    40日窗口用于发现"慢牛股"——这些票在20日窗口排名可能不突出，
+    但拉长到40日就很明显（如利通电子型：40日翻倍但20日仅30%+）。
 
     Args:
         stocks: 股票列表
@@ -1002,7 +1152,7 @@ def compute_period_rankings(stocks, qt_data, kline_returns=None):
     else:
         print(f"  数据源: 腾讯 qt API（可能有偏差）")
 
-    rankings = {"5d": [], "10d": [], "20d": []}
+    rankings = {"5d": [], "10d": [], "20d": [], "40d": []}
 
     for s in stocks:
         code = s["code"]
@@ -1024,17 +1174,21 @@ def compute_period_rankings(stocks, qt_data, kline_returns=None):
                 ret_5d = kr["ret_5d"]
                 ret_10d = kr["ret_10d"]
                 ret_20d = kr["ret_20d"]
+                # 40日涨幅仅来自K线数据（qt API 不提供），部分股票可能没满45日
+                ret_40d = kr.get("ret_40d", 0) if kr.get("has_40d") else 0
             else:
                 ret_5d = qt.get("ret_5d", 0)
                 ret_10d = qt.get("ret_10d", 0)
                 ret_20d = qt.get("ret_20d", 0)
+                ret_40d = 0
         else:
             ret_5d = qt.get("ret_5d", 0)
             ret_10d = qt.get("ret_10d", 0)
             ret_20d = qt.get("ret_20d", 0)
+            ret_40d = 0
 
         # 过滤掉涨跌幅异常的
-        for period, ret in [("5d", ret_5d), ("10d", ret_10d), ("20d", ret_20d)]:
+        for period, ret in [("5d", ret_5d), ("10d", ret_10d), ("20d", ret_20d), ("40d", ret_40d)]:
             if abs(ret) > 500:  # 超过500%视为异常
                 continue
             rankings[period].append({
@@ -1049,7 +1203,7 @@ def compute_period_rankings(stocks, qt_data, kline_returns=None):
 
     # 各周期排序，取 Top 30
     result = {}
-    for period in ["5d", "10d", "20d"]:
+    for period in ["5d", "10d", "20d", "40d"]:
         sorted_list = sorted(rankings[period], key=lambda x: x["ret"], reverse=True)
         top30 = sorted_list[:30]
         result[period] = top30
@@ -1061,7 +1215,7 @@ def compute_period_rankings(stocks, qt_data, kline_returns=None):
     # === 诊断计算 ===
     print(f"\n  [诊断] 计算聚合指标...")
     diag = {}
-    for period in ["20d", "10d", "5d"]:
+    for period in ["20d", "10d", "5d", "40d"]:
         diag[period] = _compute_single_period_diag(result.get(period, []))
         p = diag[period]
         print(f"  {period}: 首涨幅={p.get('top_return',0)}%  "
@@ -1071,8 +1225,8 @@ def compute_period_rankings(stocks, qt_data, kline_returns=None):
 
     print(f"\n  [诊断] 跨周期分析...")
     cross = _compute_cross_period(result)
-    print(f"  三周期持续: {len(cross['persistent_3periods'])}只  加速: {cross['accel_count']}只  减速: {cross['decel_count']}只")
-    print(f"  仅5日新爆: {len(cross['only_5d'])}只  仅20日旧强: {len(cross['only_20d'])}只")
+    print(f"  四周期持续: {len(cross['persistent_4periods'])}只  三周期持续: {len(cross['persistent_3periods'])}只  加速: {cross['accel_count']}只  减速: {cross['decel_count']}只")
+    print(f"  仅5日新爆: {len(cross['only_5d'])}只  仅20日: {len(cross['only_20d'])}只  仅40日慢牛: {len(cross['only_40d'])}只")
 
     print(f"\n  [诊断] 涨幅路径分解...")
     traj = _compute_trajectory_analysis(result, kline_returns)
@@ -1083,7 +1237,10 @@ def compute_period_rankings(stocks, qt_data, kline_returns=None):
     print(f"\n  [诊断] 交易者策略启示...")
     implications = _derive_trader_implications(diag, cross, traj)
     for trader_type, impl in implications.items():
-        print(f"  {trader_type}: {impl['评估'][:60]}...")
+        if isinstance(impl, dict):
+            print(f"  {trader_type}: {impl['评估'][:60]}...")
+        else:
+            print(f"  {trader_type}: {impl[:80]}...")
 
     # 赚钱效应自动评级（综合考虑涨幅+路径）
     top_ret_20d = diag.get("20d", {}).get("top_return", 0)
@@ -1171,7 +1328,7 @@ def main():
     period_rankings = compute_period_rankings(stocks, qt_data, kline_returns)
 
     print(f"\n[OK] 完成！选股池包含 {len(pool['observe'])} 只观察股 + {len(pool['trade'])} 只交易股")
-    print(f"     多周期涨幅排名+诊断框架已更新（5日/10日/20日 Top 30 + 聚合诊断 + 交易者启示）")
+    print(f"     多周期涨幅排名+诊断框架已更新（5/10/20/40日 Top 30 + 聚合诊断 + 交易者启示）")
     return 0
 
 
