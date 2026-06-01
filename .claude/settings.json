@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python scripts/run_pipeline.py)",
+      "Bash(python scripts/send_report.py)",
+      "Bash(python scripts/update_data.py)",
+      "Bash(python scripts/screen_stocks.py)",
+      "Read(2-wiki/data/**)",
+      "Read(2-wiki/concepts/**)",
+      "Read(2-wiki/syntheses/**)",
+      "Edit(2-wiki/data/daily_analysis.md)",
+      "Edit(2-wiki/data/meta.json)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
+    ]
+  }
+}
