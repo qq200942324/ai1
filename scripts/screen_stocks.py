@@ -40,7 +40,9 @@ DATA_DIR = os.path.join(VAULT_ROOT, "2-wiki", "data")
 OUTPUT_FILE = os.path.join(DATA_DIR, "stock_pool.json")
 OUTPUT_PERIOD_FILE = os.path.join(DATA_DIR, "market", "period_returns.json")  # 多周期涨幅排名
 
-MIN_CAP_YI = 80  # 最低流通市值（亿）
+MIN_CAP_YI = 80  # 最低流通市值（亿）— 交易池门槛
+DATA_COLLECT_MIN_CAP_YI = 50  # 数据收集门槛（亿）— 低于此的不入库
+DATA_COLLECT_MIN_CAP = DATA_COLLECT_MIN_CAP_YI * 1e8  # 转换为元
 MIN_CAP = MIN_CAP_YI * 1e8  # 转换为元
 
 SESSION = requests.Session()
@@ -97,7 +99,7 @@ def _normalize_vol_ratio(raw_val):
 
 def fetch_stock_universe():
     """拉取流通市值 > MIN_CAP 的所有 A 股"""
-    print(f"\n[STOCK] Step 1: 拉取流通市值 > {MIN_CAP_YI}亿 的股票...")
+    print(f"\n[STOCK] Step 1: 拉取流通市值 > {DATA_COLLECT_MIN_CAP_YI}亿 的股票（交易池≥{MIN_CAP_YI}亿）...")
 
     all_stocks = []
     page = 1
@@ -130,7 +132,7 @@ def fetch_stock_universe():
                 if "PT" in name or "*ST" in name or cap == 0 or code.startswith("688"):
                     continue
 
-                if cap >= MIN_CAP:
+                if cap >= DATA_COLLECT_MIN_CAP:
                     price = item.get("f2", 0) / 100 if item.get("f2") else 0  # f2=分→元
                     prev_close = item.get("f18", 0) / 100 if item.get("f18") else 0  # f18=分→元
                     change_amt = item.get("f3", 0)  # f3=涨跌额(可能是分)
@@ -174,7 +176,7 @@ def fetch_stock_universe():
                     below_threshold += 1
 
             if page % 5 == 0:
-                print(f"  已翻 {page} 页，收集 {len(all_stocks)} 只（流通值 >= {MIN_CAP_YI}亿）...")
+                print(f"  已翻 {page} 页，收集 {len(all_stocks)} 只（流通值 >= {DATA_COLLECT_MIN_CAP_YI}亿）...")
 
             # 如果本页大部分低于阈值，停止
             if below_threshold > 80:
@@ -190,7 +192,7 @@ def fetch_stock_universe():
             print(f"  [WARN] 第 {page} 页获取失败: {e}")
             break
 
-    print(f"  [OK] 共收集 {len(all_stocks)} 只股票（流通值 >= {MIN_CAP_YI}亿）")
+    print(f"  [OK] 共收集 {len(all_stocks)} 只股票（流通值 >= {DATA_COLLECT_MIN_CAP_YI}亿）")
     return all_stocks
 
 
@@ -269,9 +271,11 @@ def fetch_recent_klines(stocks, days=10):
 # Step 3: 计算技术指标 & 应用 Wiki 筛选
 # ============================================================
 
-def compute_wiki_scores(stocks, qt_data):
+def compute_wiki_scores(stocks, qt_data, market_phase=None, identities=None):
     """基于 Wiki 交易框架计算每只股票的得分"""
     print(f"\n[STOCK] Step 3: 应用 Wiki 框架计算得分...")
+    is_bear = market_phase and market_phase.get("phase") in ("退潮", "偏弱震荡")
+    identities = identities or {}
 
     scored = []
 
@@ -388,6 +392,35 @@ def compute_wiki_scores(stocks, qt_data):
             score += 1
             reasons.append(f"流动性好(日成交{amount_yi:.0f}亿)")
 
+        # ---- 维度 9：退潮期超跌反弹识别 ----
+        # 退潮/偏弱震荡时：20日跌 > 15% + 今日涨 > 2%（近似 3 日反弹）→ +2分
+        if is_bear:
+            ret_20d_qt = qt.get("ret_20d", 0) or 0
+            if ret_20d_qt < -15 and change > 2:
+                score += 2
+                reasons.append(f"退潮超跌反弹(20日{ret_20d_qt:+.0f}% 今日{change:+.1f}%)")
+
+        # ---- 维度 10：前视镜市场身份 ----
+        # 行业市值龙头 / 涨停板人气 / 量能异动 → 不是后视镜看历史，而是看"当下正在发生什么"
+        ident = identities.get(code, {})
+        id_score = ident.get("identity_score", 0)
+        if id_score >= 3:
+            score += 2
+            reasons.append("市场身份突出(行业龙头+涨停+量能异动)")
+        elif id_score >= 2:
+            score += 1
+            id_parts = []
+            if ident.get("is_industry_leader"):
+                id_parts.append("行业市值第一")
+            if ident.get("is_limit_up"):
+                id_parts.append("涨停")
+            if ident.get("vol_anomaly"):
+                id_parts.append("量能异动")
+            reasons.append(f"市场身份: {'+'.join(id_parts)}")
+
+        # 将身份信息附加到股票数据
+        s["market_identity"] = ident
+
         scored.append({
             **s,
             "qt": qt,
@@ -415,9 +448,21 @@ def compute_wiki_scores(stocks, qt_data):
 # Step 4: 生成选股池 JSON
 # ============================================================
 
-def build_stock_pool(scored):
-    """从得分列表中按 Wiki 逻辑构建 30 只选股池"""
+def build_stock_pool(scored, market_phase=None):
+    """从得分列表中按 Wiki 逻辑构建 30 只选股池
+
+    Args:
+        scored: 打分后的股票列表
+        market_phase: _detect_market_phase() 的返回值（可选，用于动态配额）
+    """
     print(f"\n[STOCK] Step 4: 构建选股池...")
+    phase_label = market_phase["phase"] if market_phase else "未知"
+
+    # === 交易池硬门槛：流通市值 ≥ 80亿 ===
+    # 数据收集阶段放宽到 50 亿（用于 period_returns 分析），
+    # 但最终选股池仍只纳入 ≥ 80 亿的标的
+    scored = [s for s in scored if s["circ_mcap_yi"] >= MIN_CAP_YI]
+    print(f"  过滤至 ≥{MIN_CAP_YI}亿: {len(scored)} 只")
 
     # 分类统计
     by_theme = defaultdict(list)
@@ -425,47 +470,26 @@ def build_stock_pool(scored):
         by_theme[s["theme"]].append(s)
 
     # === 观察股 (20只) ===
-    # 策略：覆盖主要方向的代表性标的，用于观察市场风向
+    # 策略：覆盖主要方向的代表性标的，配额按市场阶段动态调整
+    phase = market_phase["phase"] if market_phase else "震荡"
+
+    # 动态配额表：{phase: {theme: quota}}
+    QUOTAS = {
+        "主升":     {"AI硬件": 10, "防御消费": 1, "金融": 1, "大宗商品": 2, "高端制造": 2, "AI应用": 2, "新能源": 1, "其他": 1},
+        "偏强震荡":  {"AI硬件": 7,  "防御消费": 2, "金融": 1, "大宗商品": 3, "高端制造": 3, "AI应用": 2, "新能源": 1, "其他": 1},
+        "震荡":     {"AI硬件": 5,  "防御消费": 3, "金融": 2, "大宗商品": 3, "高端制造": 3, "AI应用": 2, "新能源": 1, "其他": 1},
+        "偏弱震荡":  {"AI硬件": 3,  "防御消费": 4, "金融": 3, "大宗商品": 3, "高端制造": 3, "AI应用": 2, "新能源": 1, "其他": 1},
+        "退潮":     {"AI硬件": 2,  "防御消费": 5, "金融": 4, "大宗商品": 3, "高端制造": 3, "AI应用": 1, "新能源": 1, "其他": 1},
+    }
+    quotas = QUOTAS.get(phase, QUOTAS["震荡"])
+    theme_pool = {theme: [s for s in scored if s["theme"] == theme] for theme in quotas}
     observe = []
-
-    # AI硬件方向龙头 (4只)
-    ai_hw = [s for s in scored if s["theme"] == "AI硬件"]
-    observe.extend(ai_hw[:4])
-
-    # 大宗商品方向 (3只)
-    comm = [s for s in scored if s["theme"] == "大宗商品"]
-    observe.extend(comm[:3])
-
-    # 防御消费/医药 (3只) - 退潮期风向标
-    defense = [s for s in scored if s["theme"] == "防御消费"]
-    observe.extend(defense[:3])
-
-    # 金融权重 (2只) - 大盘风向标
-    fin = [s for s in scored if s["theme"] == "金融"]
-    observe.extend(fin[:2])
-
-    # 高端制造 (3只)
-    mfg = [s for s in scored if s["theme"] == "高端制造"]
-    observe.extend(mfg[:3])
-
-    # AI应用 (2只)
-    ai_app = [s for s in scored if s["theme"] == "AI应用"]
-    observe.extend(ai_app[:2])
-
-    # 新能源方向 (2只)
-    ne = [s for s in scored if s["theme"] == "新能源"]
-    observe.extend(ne[:2])
-
-    # 补充：其他高得分但未被覆盖的方向 (1只)
-    existing_codes = {s["code"] for s in observe}
-    others = [s for s in scored if s["code"] not in existing_codes and s["theme"] == "其他"]
-    observe.extend(others[:1])
-
-    # 确保 20 只
+    for theme, n in quotas.items():
+        observe.extend(theme_pool.get(theme, [])[:n])
     observe = observe[:20]
 
-    # === 重点交易个股 (10只) ===
-    # 策略：高得分 + 主题在核心方向 + 有明确的 Wiki 买入信号
+    # === 重点交易个股（退潮期减少到 5 只，优先选超跌反弹） ===
+    trade_target = 5 if phase in ("退潮", "偏弱震荡") else 10
     trade = []
 
     # 精选标准：
@@ -478,19 +502,29 @@ def build_stock_pool(scored):
         and s["code"] not in observe_codes
     ]
 
-    # 优先选有弱转强/分歧转一致信号的
-    with_signal = [s for s in candidates if any(
-        "弱转强" in r or "分歧转一致" in r for r in s["reasons"]
-    )]
-    without_signal = [s for s in candidates if s not in with_signal]
+    # 退潮期优先选超跌反弹
+    if phase in ("退潮", "偏弱震荡"):
+        with_signal = [s for s in candidates if any(
+            "超跌反弹" in r or "退潮超跌" in r for r in s.get("reasons", [])
+        )]
+        others = [s for s in candidates if s not in with_signal]
+        trade.extend(with_signal[:trade_target])
+        trade.extend(others[:max(0, trade_target - len(trade))])
+    else:
+        # 优先选有弱转强/分歧转一致信号的
+        with_signal = [s for s in candidates if any(
+            "弱转强" in r or "分歧转一致" in r for r in s["reasons"]
+        )]
+        without_signal = [s for s in candidates if s not in with_signal]
+        trade.extend(with_signal[:max(6, trade_target - 4)])
+        trade.extend(without_signal[:max(0, trade_target - len(trade))])
 
-    trade.extend(with_signal[:6])
-    trade.extend(without_signal[:4])
-    trade = trade[:10]
+    trade = trade[:trade_target]
 
     # === 输出格式 ===
     def format_stock(s, category):
         qt = s.get("qt", {})
+        ident = s.get("market_identity", {})
         return {
             "code": s["code"],
             "name": s["name"],
@@ -507,14 +541,45 @@ def build_stock_pool(scored):
             "score": s["score"],
             "category": category,
             "wiki_reasons": s["reasons"],
+            "market_identity": {
+                "is_industry_leader": ident.get("is_industry_leader", False),
+                "is_limit_up": ident.get("is_limit_up", False),
+                "vol_anomaly": ident.get("vol_anomaly", False),
+                "amp_anomaly": ident.get("amp_anomaly", False),
+                "industry_rank": ident.get("industry_rank", 99),
+                "identity_score": ident.get("identity_score", 0),
+            },
         }
+
+    # === 持仓交叉引用（从 positions.json 读取） ===
+    position_cross_ref = []
+    positions_path = os.path.join(DATA_DIR, "positions.json")
+    if os.path.exists(positions_path):
+        try:
+            with open(positions_path, "r", encoding="utf-8") as f:
+                pos_data = json.load(f)
+            all_codes = {s["code"] for s in observe + trade}
+            for pos in pos_data.get("positions", []):
+                if pos.get("code") in all_codes:
+                    position_cross_ref.append({
+                        "code": pos["code"],
+                        "name": pos.get("name", ""),
+                        "entry_date": pos.get("entry_date", ""),
+                        "floating_pnl_pct": pos.get("floating_pnl_pct", 0),
+                        "days_held": pos.get("days_held", 0),
+                        "divergence_stage": pos.get("divergence_stage", "?"),
+                    })
+        except Exception:
+            pass
 
     result = {
         "meta": {
             "updated": datetime.now().isoformat(),
             "min_cap_yi": MIN_CAP_YI,
+            "data_collect_min_cap_yi": DATA_COLLECT_MIN_CAP_YI,
             "total_screened": len(scored),
-            "market_phase": "退潮期",
+            "market_phase": market_phase if market_phase else "退潮期",
+            "positions_file": "2-wiki/data/positions.json",
             "wiki_frameworks": [
                 "[[龙头认知]]", "[[主要矛盾与核心论]]", "[[赚钱效应]]",
                 "[[弱转强]]", "[[分歧与一致]]", "[[情绪周期]]",
@@ -523,6 +588,7 @@ def build_stock_pool(scored):
         },
         "observe": [format_stock(s, "观察股") for s in observe],
         "trade": [format_stock(s, "重点交易") for s in trade],
+        "position_cross_ref": position_cross_ref,
         "theme_summary": {
             theme: len([s for s in observe + trade if s["theme"] == theme])
             for theme in CORE_THEMES
@@ -558,7 +624,441 @@ def build_stock_pool(scored):
 
 
 # ============================================================
+# Step 4.1: 前视镜维度（市场身份）
 # ============================================================
+
+def _compute_market_identity(stocks, qt_data):
+    """计算每只股票的"前视镜"市场身份。
+
+    从纯后视镜（只看历史涨幅）变为后视镜 + 前视镜（行业地位、涨停板人气、
+    量能异动、振幅异常等"当下正在发生"的信号）。
+
+    Returns:
+        dict[code] → {
+            is_industry_leader: bool,  # 行业市值第一
+            is_limit_up: bool,         # 今日涨停
+            vol_anomaly: bool,         # 量能异动（量比>3或成交额行业前3）
+            amp_anomaly: bool,         # 振幅异常（>10%）
+            industry_rank: int,        # 行业市值排名
+            identity_score: int,       # 综合市场身份分(0-3)
+        }
+    """
+    if not stocks or not qt_data:
+        return {}
+
+    # 行业内市值排名
+    industry_caps = defaultdict(list)
+    for s in stocks:
+        industry_caps[s.get("sector", "未知")].append((s["code"], s.get("circ_mcap_yi", 0)))
+    for sector in industry_caps:
+        industry_caps[sector].sort(key=lambda x: x[1], reverse=True)
+
+    # 行业内成交额排名
+    industry_amounts = defaultdict(list)
+    for s in stocks:
+        qt = qt_data.get(s["code"], {})
+        amt = qt.get("amount_yi", 0) or 0
+        industry_amounts[s.get("sector", "未知")].append((s["code"], amt))
+    for sector in industry_amounts:
+        industry_amounts[sector].sort(key=lambda x: x[1], reverse=True)
+
+    identities = {}
+    for s in stocks:
+        code = s["code"]
+        qt = qt_data.get(code, {})
+        sector = s.get("sector", "未知")
+
+        # 行业市值排名
+        cap_list = industry_caps.get(sector, [])
+        cap_rank = next((i + 1 for i, (c, _) in enumerate(cap_list) if c == code), 99)
+
+        # 行业成交额排名
+        amt_list = industry_amounts.get(sector, [])
+        amt_rank = next((i + 1 for i, (c, _) in enumerate(amt_list) if c == code), 99)
+
+        # 涨停检测
+        change = qt.get("change_pct", 0) or s.get("change_pct", 0) or 0
+        is_limit_up = change > 9.5
+
+        # 量能异动
+        vol_ratio = s.get("vol_ratio", 0) or 0
+        amt = qt.get("amount_yi", 0) or 0
+        vol_anomaly = vol_ratio > 3 or amt_rank <= 3
+
+        # 振幅异常
+        amplitude = qt.get("amplitude", 0) or 0
+        amp_anomaly = amplitude > 10
+
+        # 综合身份评分（0-3 分）
+        identity_score = 0
+        if cap_rank == 1:
+            identity_score += 1  # 行业市值龙头
+        if is_limit_up:
+            identity_score += 1  # 涨停板人气
+        if vol_anomaly:
+            identity_score += 1  # 量能异动
+        # 硬顶 3 分
+
+        identities[code] = {
+            "is_industry_leader": cap_rank == 1,
+            "is_limit_up": is_limit_up,
+            "vol_anomaly": vol_anomaly,
+            "amp_anomaly": amp_anomaly,
+            "industry_rank": cap_rank,
+            "identity_score": identity_score,
+        }
+
+    return identities
+
+
+# ============================================================
+# ============================================================
+# ============================================================
+# Step 4.2: 市场阶段自动检测（六维加权评分）
+# ============================================================
+
+def _load_indices_master():
+    """加载 indices_master.json，返回 8 大指数近 20 日 OHLCV 数据"""
+    path = os.path.join(DATA_DIR, "market", "indices_master.json")
+    if not os.path.exists(path):
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
+def _detect_market_phase(period_returns=None):
+    """六维加权评分检测当前市场阶段。
+
+    Args:
+        period_returns: period_returns.json 的输出 dict（可选，用于增强信号）
+
+    Returns:
+        dict: {
+            phase, score, confidence, dimensions, signals,
+            concentration_advice, trajectory_adjustments
+        }
+    """
+    indices = _load_indices_master()
+    dims = {}
+    signals = []
+
+    # ===== 维度 1：科创 50 趋势（权重 30%） =====
+    if indices and "科创50" in indices.get("data", {}):
+        kc50 = indices["data"]["科创50"]
+        closes = [d["close"] for d in kc50]
+        if len(closes) >= 20:
+            ret_20d = round((closes[-1] / closes[-21] - 1) * 100, 2) if closes[-21] != 0 else 0
+            ret_10d = round((closes[-1] / closes[-11] - 1) * 100, 2) if closes[-11] != 0 else 0
+            ret_5d = round((closes[-1] / closes[-6] - 1) * 100, 2) if closes[-6] != 0 else 0
+        else:
+            ret_20d = ret_10d = ret_5d = 0
+    else:
+        ret_20d = ret_10d = ret_5d = 0
+
+    if ret_20d > 10:
+        trend_score, trend_detail = 3, f"科创50 20日{ret_20d:+.1f}% 强趋势向上"
+    elif ret_20d > 5:
+        trend_score, trend_detail = 2, f"科创50 20日{ret_20d:+.1f}% 温和上升"
+    elif ret_20d > 0:
+        trend_score, trend_detail = 1, f"科创50 20日{ret_20d:+.1f}% 微涨"
+    elif ret_20d > -3:
+        trend_score, trend_detail = -1, f"科创50 20日{ret_20d:+.1f}% 微跌"
+    elif ret_20d > -5:
+        trend_score, trend_detail = -2, f"科创50 20日{ret_20d:+.1f}% 温和下跌"
+    else:
+        trend_score, trend_detail = -3, f"科创50 20日{ret_20d:+.1f}% 强趋势向下"
+    dims["trend"] = {"score": trend_score, "weight": 0.30, "detail": trend_detail}
+
+    # ===== 维度 2：指数广度（权重 20%） =====
+    up_count = 0
+    breadth_detail_parts = []
+    if indices:
+        for name, data in indices["data"].items():
+            closes = [d["close"] for d in data]
+            if len(closes) >= 11:
+                ret = (closes[-1] / closes[-11] - 1) * 100
+                if ret > 0:
+                    up_count += 1
+                breadth_detail_parts.append(f"{name}{ret:+.1f}%")
+    breadth_detail = f"{up_count}/8指数10日上涨 ({', '.join(breadth_detail_parts[:4])}...)"
+
+    if up_count >= 7:
+        breadth_score = 3
+    elif up_count >= 5:
+        breadth_score = 2
+    elif up_count >= 3:
+        breadth_score = 0
+    elif up_count >= 1:
+        breadth_score = -2
+    else:
+        breadth_score = -3
+    dims["breadth"] = {"score": breadth_score, "weight": 0.20, "detail": breadth_detail}
+
+    # ===== 维度 3：动能方向（权重 15%） =====
+    kc50_data = indices["data"].get("科创50", []) if indices else []
+    if len(kc50_data) >= 6:
+        kc50_5d = round((kc50_data[-1]["close"] / kc50_data[-6]["close"] - 1) * 100, 2)
+    else:
+        kc50_5d = ret_5d
+
+    if kc50_5d > ret_20d and kc50_5d > 3:
+        momentum_score, momentum_detail = 2, f"5日{kc50_5d:+.1f}% > 20日{ret_20d:+.1f}% 加速上涨"
+    elif kc50_5d > ret_20d:
+        momentum_score, momentum_detail = 1, f"5日{kc50_5d:+.1f}% > 20日{ret_20d:+.1f}% 短期强于长期"
+    elif abs(kc50_5d - ret_20d) < 2:
+        momentum_score, momentum_detail = 0, f"5日{kc50_5d:+.1f}% ≈ 20日{ret_20d:+.1f}% 动能平稳"
+    elif kc50_5d < ret_20d and kc50_5d > -3:
+        momentum_score, momentum_detail = -1, f"5日{kc50_5d:+.1f}% < 20日{ret_20d:+.1f}% 短期弱于长期"
+    else:
+        momentum_score, momentum_detail = -2, f"5日{kc50_5d:+.1f}% < 20日{ret_20d:+.1f}% 加速下跌"
+    dims["momentum"] = {"score": momentum_score, "weight": 0.15, "detail": momentum_detail}
+
+    # ===== 维度 4：极端波动（权重 15%） =====
+    extreme_detail_parts = []
+    extreme_score = 2  # 默认稳定
+    if indices:
+        big_drops = 0
+        consecutive_big_drops = 0
+        prev_was_drop = False
+        for i in range(max(0, len(kc50_data) - 5), len(kc50_data)):
+            d = kc50_data[i]
+            chg = d.get("change_pct", 0)
+            if chg < -3:
+                big_drops += 1
+                if prev_was_drop:
+                    consecutive_big_drops += 1
+                prev_was_drop = True
+                extreme_detail_parts.append(f"{d['date']} {chg:+.1f}%")
+            else:
+                prev_was_drop = False
+                if abs(chg) > 3:
+                    extreme_detail_parts.append(f"{d['date']} {chg:+.1f}%")
+
+        # 检查所有指数
+        any_big_down = False
+        all_big_downs = 0
+        for name, data in indices["data"].items():
+            for d in data[-5:]:
+                if d.get("change_pct", 0) < -5:
+                    all_big_downs += 1
+                    any_big_down = True
+
+        if any_big_down and all_big_downs >= 3:
+            extreme_score = -2
+            extreme_detail = f"近5日{all_big_downs}次指数单日跌>5% 恐慌释放"
+            signals.append("科创50两天累计-10%+恐慌释放")
+        elif consecutive_big_drops >= 1:
+            extreme_score = -3
+            extreme_detail = f"连续2日有指数跌>3% 退潮加速"
+            signals.append("连续暴跌退潮加速")
+        elif big_drops >= 1:
+            extreme_score = -1
+            extreme_detail = f"有指数单日跌>3% ({', '.join(extreme_detail_parts[:3])})"
+        elif extreme_detail_parts:
+            extreme_score = 1
+            extreme_detail = f"可控波动 ({', '.join(extreme_detail_parts[:3])})"
+        else:
+            extreme_score = 2
+            extreme_detail = "无极端波动 稳定"
+    else:
+        extreme_detail = "无指数数据"
+    dims["extremes"] = {"score": extreme_score, "weight": 0.15, "detail": extreme_detail}
+
+    # ===== 维度 5：大小票一致性（权重 10%） =====
+    sz50_data = indices["data"].get("上证50", []) if indices else []
+    zz1000_data = indices["data"].get("中证1000", []) if indices else []
+
+    if len(sz50_data) >= 6 and len(zz1000_data) >= 6:
+        sz50_5d = round((sz50_data[-1]["close"] / sz50_data[-6]["close"] - 1) * 100, 2)
+        zz1000_5d = round((zz1000_data[-1]["close"] / zz1000_data[-6]["close"] - 1) * 100, 2)
+        gap = abs(sz50_5d - zz1000_5d)
+        same_direction = (sz50_5d > 0) == (zz1000_5d > 0)
+
+        if same_direction and gap < 2:
+            div_score, div_detail = 1, f"上证50{sz50_5d:+.1f}% vs 中证1000{zz1000_5d:+.1f}% 共振健康"
+        elif same_direction:
+            div_score, div_detail = 0, f"上证50{sz50_5d:+.1f}% vs 中证1000{zz1000_5d:+.1f}% 同向但幅度有差距"
+        elif gap > 5:
+            div_score, div_detail = -2, f"上证50{sz50_5d:+.1f}% vs 中证1000{zz1000_5d:+.1f}% 严重分化(某队护盘?)"
+        else:
+            div_score, div_detail = -1, f"上证50{sz50_5d:+.1f}% vs 中证1000{zz1000_5d:+.1f}% 跷跷板分歧"
+    else:
+        div_score, div_detail = 0, "数据不足"
+    dims["divergence"] = {"score": div_score, "weight": 0.10, "detail": div_detail}
+
+    # ===== 维度 6：量能趋势（权重 10%） =====
+    if indices:
+        # 统计所有指数近5日 vs 近20日均量
+        vol_ratios = []
+        for name in ["科创50", "上证指数", "深证成指", "创业板指"]:
+            data = indices["data"].get(name, [])
+            if len(data) >= 20:
+                vol_5d_avg = sum(d.get("volume", 0) for d in data[-5:]) / 5
+                vol_20d_avg = sum(d.get("volume", 0) for d in data[-20:]) / 20
+                if vol_20d_avg > 0:
+                    vol_ratios.append(vol_5d_avg / vol_20d_avg)
+
+        if vol_ratios:
+            avg_vol_ratio = sum(vol_ratios) / len(vol_ratios)
+        else:
+            avg_vol_ratio = 1.0
+    else:
+        avg_vol_ratio = 1.0
+
+    if avg_vol_ratio > 1.3:
+        vol_score, vol_detail = 1, f"四大指数5日均量/20日均量={avg_vol_ratio:.2f} 放量"
+        signals.append("放量资金进场")
+    elif avg_vol_ratio > 0.7:
+        vol_score, vol_detail = 0, f"四大指数5日均量/20日均量={avg_vol_ratio:.2f} 正常"
+    else:
+        vol_score, vol_detail = -1, f"科创50 5日均量<20日均量×0.7 严重缩量"
+        signals.append("缩量交投萎缩")
+    dims["volume"] = {"score": vol_score, "weight": 0.10, "detail": vol_detail}
+
+    # ===== 综合评分 =====
+    weighted_score = round(sum(
+        d["score"] * d["weight"] for d in dims.values()
+    ), 1)
+
+    # ===== period_returns 增强信号（调整因子） =====
+    if period_returns:
+        traj = period_returns.get("trajectory_analysis", {})
+        cross = period_returns.get("cross_period", {})
+
+        type_dist = traj.get("type_distribution", {})
+        reversal_count = type_dist.get("高位逆转 🔴", {}).get("count", 0)
+        front_loaded_count = type_dist.get("前重后轻 📉", {}).get("count", 0)
+        decel_count = cross.get("decel_count", 0)
+        accel_count = cross.get("accel_count", 0)
+
+        # 20日 Top30 今日涨停数
+        d20_today = period_returns.get("diagnostics", {}).get("20d", {}).get("today_distribution", {})
+        d20_limits = d20_today.get("涨停(>9.5%)", 0)
+
+        d5_only = len(cross.get("only_5d", []))
+
+        adjustments = []
+        if reversal_count >= 5:
+            weighted_score -= 2
+            adjustments.append(f"高位逆转{reversal_count}只→-2")
+            signals.append("大量翻倍股正在派发")
+        if front_loaded_count >= 12:
+            weighted_score -= 1
+            adjustments.append(f"前重后轻{front_loaded_count}只→-1")
+        if decel_count > accel_count + 5:
+            weighted_score -= 1
+            adjustments.append(f"减速主导({decel_count}vs{accel_count})→-1")
+        if d20_limits < 3:
+            weighted_score -= 1
+            adjustments.append(f"涨停骤减(仅{d20_limits}只)→-1")
+        if d5_only >= 10:
+            weighted_score -= 1
+            adjustments.append(f"次新妖股抱团({d5_only}只仅5日)→-1")
+            signals.append("次新妖股崩塌迹象")
+
+        if adjustments:
+            dims["trajectory_adjustments"] = {"detail": "; ".join(adjustments)}
+            signals.append("路径分布恶化")
+
+    # ===== 边界规则（直接判定） =====
+    override_phase = None
+    if indices:
+        # 连续3日 ≥7/8 指数下跌 + 科创50跌幅 > 5%
+        consecutive_down = 0
+        for i in range(len(kc50_data) - 3, len(kc50_data)):
+            if i < 0:
+                continue
+            d = kc50_data[i]
+            # 统计当日多少指数下跌
+            down_idx = 0
+            for name, idata in indices["data"].items():
+                if i < len(idata):
+                    if idata[i].get("change_pct", 0) < 0:
+                        down_idx += 1
+            if down_idx >= 7:
+                consecutive_down += 1
+            else:
+                consecutive_down = 0
+
+        if consecutive_down >= 3 and ret_20d < -5:
+            override_phase = "退潮"
+            signals.append("边界规则触发: 连续3日≥7/8指数下跌")
+
+        # 连续2日 8/8 全红 + 科创50涨幅 > 5%
+        consecutive_up = 0
+        for i in range(max(0, len(kc50_data) - 3), len(kc50_data)):
+            if i >= len(kc50_data):
+                continue
+            d = kc50_data[i]
+            all_up = all(
+                i < len(idata) and idata[i].get("change_pct", 0) > 0
+                for name, idata in indices["data"].items()
+            )
+            if all_up:
+                consecutive_up += 1
+            else:
+                consecutive_up = 0
+
+        if consecutive_up >= 2 and ret_5d > 5:
+            override_phase = "主升"
+            signals.append("边界规则触发: 连续2日全部指数上涨")
+
+        # 某队明显护盘（上证50逆势涨 > 1% 而中证1000跌 > 2%）
+        if len(sz50_data) >= 1 and len(zz1000_data) >= 1:
+            sz50_today = sz50_data[-1].get("change_pct", 0)
+            zz1000_today = zz1000_data[-1].get("change_pct", 0)
+            if sz50_today > 1 and zz1000_today < -2:
+                signals.append("某队护盘信号(上证50+中证1000-)")
+                if not override_phase:
+                    weighted_score = min(weighted_score, -2)
+
+    # ===== 阶段判定 =====
+    if override_phase:
+        phase = override_phase
+    elif weighted_score >= 5:
+        phase = "主升"
+    elif weighted_score >= 2:
+        phase = "偏强震荡"
+    elif weighted_score >= -1:
+        phase = "震荡"
+    elif weighted_score >= -4:
+        phase = "偏弱震荡"
+    else:
+        phase = "退潮"
+
+    # 置信度估算
+    dims_with_data = sum(1 for d in dims.values() if "数据不足" not in d.get("detail", ""))
+    confidence = round(min(0.95, dims_with_data / 6 * 0.9 + 0.1), 2)
+
+    # 集中度建议
+    if phase in ("主升", "偏强震荡"):
+        conc_advice = "集中"
+    elif phase == "震荡":
+        conc_advice = "适度集中"
+    else:
+        conc_advice = "分散"
+
+    # 路径调整建议
+    traj_adjustments = []
+    if phase in ("退潮", "偏弱震荡"):
+        traj_adjustments.append("启用退潮超跌反弹识别")
+    if phase == "偏强震荡":
+        traj_adjustments.append("关注V型反转+匀速推进")
+
+    return {
+        "phase": phase,
+        "score": round(weighted_score, 1),
+        "confidence": confidence,
+        "dimensions": dims,
+        "signals": signals,
+        "concentration_advice": conc_advice,
+        "trajectory_adjustments": traj_adjustments,
+    }
+
+
 # ============================================================
 # Step 4.5: 通过 K 线 API 获取准确的周期涨跌幅
 # （替代腾讯 qt API 不可靠的 ret_5d/ret_10d/ret_20d 字段）
@@ -598,14 +1098,14 @@ def _fetch_single_stock_klines(code, market_prefix, days=45):
         return code, []
 
 
-def fetch_period_returns_via_klines(stocks, max_workers=10):
+def fetch_period_returns_via_klines(stocks, max_workers=15):
     """通过 K 线数据批量计算准确的多周期涨跌幅。
 
-    返回: dict[code] → {ret_5d, ret_10d, ret_20d, valid}
+    返回: dict[code] → {ret_1d, ret_3d, ret_5d, ret_10d, ret_20d, ret_40d, valid}
     valid=False 表示数据不足以计算（新股或API失败）
     """
     print(f"\n[STOCK] Step 4.5: 通过 K 线 API 计算准确周期涨跌幅...")
-    print(f"  并发线程: {max_workers} | 股票数: {len(stocks)} | 周期: 5/10/20/40日")
+    print(f"  并发线程: {max_workers} | 股票数: {len(stocks)} | 周期: 1/3/5/10/20/40日")
 
     results = {}
     completed = 0
@@ -623,29 +1123,35 @@ def fetch_period_returns_via_klines(stocks, max_workers=10):
             completed += 1
 
             if len(closes) >= 45:
-                # ≥45条K线：可计算全部 4 个周期（5/10/20/40日）
+                # ≥45条K线：可计算全部 6 个周期（1/3/5/10/20/40日）
                 # 45 条确保 40 日涨幅的参考点距离上市日至少 4 个交易日，排除 IPO 首日噪音
                 current = closes[-1]
+                ret_1d = round((current / closes[-2] - 1) * 100, 2) if len(closes) >= 2 and closes[-2] != 0 else 0
+                ret_3d = round((current / closes[-4] - 1) * 100, 2) if closes[-4] != 0 else 0
                 ret_5d = round((current / closes[-6] - 1) * 100, 2) if closes[-6] != 0 else 0
                 ret_10d = round((current / closes[-11] - 1) * 100, 2) if closes[-11] != 0 else 0
                 ret_20d = round((current / closes[-21] - 1) * 100, 2) if closes[-21] != 0 else 0
                 ret_40d = round((current / closes[-41] - 1) * 100, 2) if closes[-41] != 0 else 0
-                results[code] = {"ret_5d": ret_5d, "ret_10d": ret_10d, "ret_20d": ret_20d, "ret_40d": ret_40d, "valid": True, "has_40d": True}
+                results[code] = {"ret_1d": ret_1d, "ret_3d": ret_3d, "ret_5d": ret_5d, "ret_10d": ret_10d, "ret_20d": ret_20d, "ret_40d": ret_40d, "valid": True, "has_40d": True}
             elif len(closes) >= 25:
-                # 25-44条K线：可计算 5/10/20日，但不够算 40 日
+                # 25-44条K线：可计算 1/3/5/10/20日，但不够算 40 日
                 current = closes[-1]
+                ret_1d = round((current / closes[-2] - 1) * 100, 2) if len(closes) >= 2 and closes[-2] != 0 else 0
+                ret_3d = round((current / closes[-4] - 1) * 100, 2) if closes[-4] != 0 else 0
                 ret_5d = round((current / closes[-6] - 1) * 100, 2) if closes[-6] != 0 else 0
                 ret_10d = round((current / closes[-11] - 1) * 100, 2) if closes[-11] != 0 else 0
                 ret_20d = round((current / closes[-21] - 1) * 100, 2) if closes[-21] != 0 else 0
-                results[code] = {"ret_5d": ret_5d, "ret_10d": ret_10d, "ret_20d": ret_20d, "ret_40d": 0, "valid": True, "has_40d": False}
+                results[code] = {"ret_1d": ret_1d, "ret_3d": ret_3d, "ret_5d": ret_5d, "ret_10d": ret_10d, "ret_20d": ret_20d, "ret_40d": 0, "valid": True, "has_40d": False}
             elif len(closes) >= 6:
                 # 只有部分数据（可能是新股），只计算短周期
                 current = closes[-1]
+                ret_1d = round((current / closes[-2] - 1) * 100, 2) if len(closes) >= 2 and closes[-2] != 0 else 0
+                ret_3d = round((current / closes[-4] - 1) * 100, 2) if len(closes) >= 4 and closes[-4] != 0 else 0
                 ret_5d = round((current / closes[-6] - 1) * 100, 2) if closes[-6] != 0 else 0
                 ret_10d = round((current / closes[-1] - 1) * 100, 2) if len(closes) >= 11 and closes[-11] != 0 else 0
-                results[code] = {"ret_5d": ret_5d, "ret_10d": ret_10d, "ret_20d": 0, "ret_40d": 0, "valid": False, "has_40d": False}
+                results[code] = {"ret_1d": ret_1d, "ret_3d": ret_3d, "ret_5d": ret_5d, "ret_10d": ret_10d, "ret_20d": 0, "ret_40d": 0, "valid": False, "has_40d": False}
             else:
-                results[code] = {"ret_5d": 0, "ret_10d": 0, "ret_20d": 0, "ret_40d": 0, "valid": False, "has_40d": False}
+                results[code] = {"ret_1d": 0, "ret_3d": 0, "ret_5d": 0, "ret_10d": 0, "ret_20d": 0, "ret_40d": 0, "valid": False, "has_40d": False}
 
             if completed % 500 == 0:
                 print(f"  已处理 {completed}/{total} 只...")
@@ -700,7 +1206,8 @@ def _compute_single_period_diag(top30):
         "大票(>500亿)": sum(1 for c in caps if c > 500),
         "中票(200-500亿)": sum(1 for c in caps if 200 < c <= 500),
         "中票(80-200亿)": sum(1 for c in caps if 80 < c <= 200),
-        "小票(<80亿)": sum(1 for c in caps if 0 < c < 80),
+        "中小票(50-80亿)": sum(1 for c in caps if 50 < c <= 80),
+        "小票(<50亿)": sum(1 for c in caps if 0 < c < 50),
     }
 
     # --- 今日涨跌分布 ---
@@ -723,7 +1230,7 @@ def _compute_cross_period(rankings):
     """
     # 各周期代码集合
     codes = {}
-    for period in ["5d", "10d", "20d", "40d"]:
+    for period in ["1d", "3d", "5d", "10d", "20d", "40d"]:
         codes[period] = {s["code"] for s in rankings.get(period, [])}
 
     cross = {
@@ -735,6 +1242,8 @@ def _compute_cross_period(rankings):
         "only_40d": [],              # 仅40日出现（慢牛：长期强但短期不突出）
         "accelerating": [],          # 5d > 10d > 20d（加速中）
         "decelerating": [],          # 5d < 10d < 20d（减速中）
+        "sudden_breakout": [],       # 1d 占比 > 50%（今日突然爆发）
+        "micro_pullback": [],        # 3d 负 1d 正（微V反转）
     }
 
     # 跨周期出现
@@ -750,9 +1259,9 @@ def _compute_cross_period(rankings):
     # 🔥 仅40日出现：长期牛股但不在短周期Top30 — 这类就是"利通电子型"慢牛
     cross["only_40d"] = list(codes["40d"] - codes["20d"] - codes["10d"] - codes["5d"])[:20]
 
-    # 加速/减速分析：构建 code → {5d, 10d, 20d, 40d} 映射
-    period_ret_map = defaultdict(lambda: {"name": "?", "5d": 0, "10d": 0, "20d": 0, "40d": 0, "theme": ""})
-    for period in ["5d", "10d", "20d", "40d"]:
+    # 加速/减速分析：构建 code → {1d, 3d, 5d, 10d, 20d, 40d} 映射
+    period_ret_map = defaultdict(lambda: {"name": "?", "1d": 0, "3d": 0, "5d": 0, "10d": 0, "20d": 0, "40d": 0, "theme": ""})
+    for period in ["1d", "3d", "5d", "10d", "20d", "40d"]:
         for s in rankings.get(period, []):
             code = s["code"]
             period_ret_map[code]["name"] = s.get("name", "?")
@@ -777,10 +1286,30 @@ def _compute_cross_period(rankings):
     cross["accel_count"] = len(accel_list)
     cross["decel_count"] = len(decel_list)
 
+    # 突发爆发（今日涨幅占5日涨幅 > 50%）
+    breakout_list = []
+    # 微V反转（3日跌但今日涨）
+    micro_v_list = []
+    for code, rets in period_ret_map.items():
+        r1, r3, r5 = rets["1d"], rets["3d"], rets["5d"]
+        if r1 > 0 and r5 > 5 and r1 > r5 * 0.5:
+            breakout_list.append({"code": code, "name": rets["name"], "theme": rets["theme"],
+                                  "1d": round(r1, 1), "5d": round(r5, 1),
+                                  "pct_of_5d": round(r1 / r5 * 100) if r5 != 0 else 0})
+        if r1 > 1 and r3 < 0:
+            micro_v_list.append({"code": code, "name": rets["name"], "theme": rets["theme"],
+                                 "1d": round(r1, 1), "3d": round(r3, 1),
+                                 "swing": round(r1 - r3, 1)})
+
+    cross["sudden_breakout"] = sorted(breakout_list, key=lambda x: x["pct_of_5d"], reverse=True)[:10]
+    cross["micro_pullback"] = sorted(micro_v_list, key=lambda x: x["swing"], reverse=True)[:10]
+    cross["sudden_breakout_count"] = len(breakout_list)
+    cross["micro_pullback_count"] = len(micro_v_list)
+
     return cross
 
 
-def _compute_trajectory_analysis(rankings, kline_returns):
+def _compute_trajectory_analysis(rankings, kline_returns, market_phase=None):
     """涨幅路径分解：翻倍是怎么走出来的？
 
     使用全量 K 线周期涨幅数据，对 20 日 Top 30 的每只标的分解为三段：
@@ -789,7 +1318,10 @@ def _compute_trajectory_analysis(rankings, kline_returns):
       - d16~20（最近）: 最近 5 个交易日 = ret_5d
 
     关系：(1+ret_20d) = (1+ret_d1_10) × (1+ret_d11_15) × (1+ret_5d)
+
+    退潮期（market_phase 为退潮/偏弱震荡）时，额外识别超跌反弹和退潮逆势放量。
     """
+    is_bear = market_phase and market_phase.get("phase") in ("退潮", "偏弱震荡")
     if not kline_returns:
         return {"total_analyzed": 0, "summary": "无K线数据", "insights": ["数据不足"]}
 
@@ -825,7 +1357,15 @@ def _compute_trajectory_analysis(rankings, kline_returns):
         pct_mid = abs(ret_d11_15) / total_abs
         pct_new = abs(r5) / total_abs
 
-        if r5 < -3 and r20 > 20:
+        # 取得 3 日涨幅用于退潮期判断
+        ret_3d = kr.get("ret_3d", 0)
+
+        # 退潮期特殊路径：超跌反弹 和 退潮逆势放量
+        if is_bear and r20 < -10 and ret_3d > 5:
+            traj_type = "超跌反弹 🟢"          # 20日跌>10%但近3日反弹>5%——退潮中的反抽机会
+        elif is_bear and r5 > 10 and r20 < 0:
+            traj_type = "退潮逆势放量 🔴"      # 退潮中近5日放量拉升——可能假突破
+        elif r5 < -3 and r20 > 20:
             traj_type = "高位逆转 🔴"        # 20日涨了不少但近5日在跌——正在派发
         elif r5 < 0 and r20 > 0:
             traj_type = "短期回调 🟡"         # 20日正但近5日小跌——正常回调
@@ -898,6 +1438,13 @@ def _compute_trajectory_analysis(rankings, kline_returns):
         insights.append(f"🟢 {steady}只匀速推进：趋势健康，可持续性强")
     if v_recovery > 3:
         insights.append(f"🟢 {v_recovery}只V型反转：弱转强信号，关注回调确认")
+    oversold_bounce = type_counts.get("超跌反弹 🟢", 0)
+    bear_fake_breakout = type_counts.get("退潮逆势放量 🔴", 0)
+
+    if oversold_bounce > 2:
+        insights.append(f"🟢 {oversold_bounce}只超跌反弹：退潮期跌够了的票开始反抽——关注反弹持续性和量能配合")
+    if bear_fake_breakout > 2:
+        insights.append(f"🔴 {bear_fake_breakout}只退潮逆势放量：退潮中拉升可能是假突破——除非有强逻辑支撑，否则不追")
     if not insights:
         insights.append("路径分布均匀，无极端信号")
 
@@ -1152,7 +1699,7 @@ def compute_period_rankings(stocks, qt_data, kline_returns=None):
     else:
         print(f"  数据源: 腾讯 qt API（可能有偏差）")
 
-    rankings = {"5d": [], "10d": [], "20d": [], "40d": []}
+    rankings = {"1d": [], "3d": [], "5d": [], "10d": [], "20d": [], "40d": []}
 
     for s in stocks:
         code = s["code"]
@@ -1171,24 +1718,30 @@ def compute_period_rankings(stocks, qt_data, kline_returns=None):
             kr = kline_returns[code]
             # 只有 valid 的才用K线数据，否则回退到 qt
             if kr.get("valid"):
+                ret_1d = kr.get("ret_1d", 0)
+                ret_3d = kr.get("ret_3d", 0)
                 ret_5d = kr["ret_5d"]
                 ret_10d = kr["ret_10d"]
                 ret_20d = kr["ret_20d"]
                 # 40日涨幅仅来自K线数据（qt API 不提供），部分股票可能没满45日
                 ret_40d = kr.get("ret_40d", 0) if kr.get("has_40d") else 0
             else:
+                ret_1d = qt.get("change_pct", 0)  # 1日 = 今日涨跌幅
+                ret_3d = 0
                 ret_5d = qt.get("ret_5d", 0)
                 ret_10d = qt.get("ret_10d", 0)
                 ret_20d = qt.get("ret_20d", 0)
                 ret_40d = 0
         else:
+            ret_1d = qt.get("change_pct", 0)
+            ret_3d = 0
             ret_5d = qt.get("ret_5d", 0)
             ret_10d = qt.get("ret_10d", 0)
             ret_20d = qt.get("ret_20d", 0)
             ret_40d = 0
 
         # 过滤掉涨跌幅异常的
-        for period, ret in [("5d", ret_5d), ("10d", ret_10d), ("20d", ret_20d), ("40d", ret_40d)]:
+        for period, ret in [("1d", ret_1d), ("3d", ret_3d), ("5d", ret_5d), ("10d", ret_10d), ("20d", ret_20d), ("40d", ret_40d)]:
             if abs(ret) > 500:  # 超过500%视为异常
                 continue
             rankings[period].append({
@@ -1203,7 +1756,7 @@ def compute_period_rankings(stocks, qt_data, kline_returns=None):
 
     # 各周期排序，取 Top 30
     result = {}
-    for period in ["5d", "10d", "20d", "40d"]:
+    for period in ["1d", "3d", "5d", "10d", "20d", "40d"]:
         sorted_list = sorted(rankings[period], key=lambda x: x["ret"], reverse=True)
         top30 = sorted_list[:30]
         result[period] = top30
@@ -1215,7 +1768,7 @@ def compute_period_rankings(stocks, qt_data, kline_returns=None):
     # === 诊断计算 ===
     print(f"\n  [诊断] 计算聚合指标...")
     diag = {}
-    for period in ["20d", "10d", "5d", "40d"]:
+    for period in ["1d", "3d", "5d", "10d", "20d", "40d"]:
         diag[period] = _compute_single_period_diag(result.get(period, []))
         p = diag[period]
         print(f"  {period}: 首涨幅={p.get('top_return',0)}%  "
@@ -1229,7 +1782,9 @@ def compute_period_rankings(stocks, qt_data, kline_returns=None):
     print(f"  仅5日新爆: {len(cross['only_5d'])}只  仅20日: {len(cross['only_20d'])}只  仅40日慢牛: {len(cross['only_40d'])}只")
 
     print(f"\n  [诊断] 涨幅路径分解...")
-    traj = _compute_trajectory_analysis(result, kline_returns)
+    # 先运行简单阶段检测（不依赖 period_returns）供轨迹分析使用
+    phase_basic = _detect_market_phase()
+    traj = _compute_trajectory_analysis(result, kline_returns, phase_basic)
     print(f"  分析 {traj['total_analyzed']} 只标的，路径分布: {traj['summary']}")
     for insight in traj.get("insights", []):
         print(f"  {insight}")
@@ -1269,10 +1824,21 @@ def compute_period_rankings(stocks, qt_data, kline_returns=None):
         emoji_map = {"极强": "🔥🔥🔥", "强": "🔥🔥", "偏强": "🔥", "中等": "🟡", "偏弱": "🔴", "弱": "🔴🔴"}
         profit_level = f"{base_level} {emoji_map.get(base_level, '')}"
 
+    # 市场阶段检测（含 period_returns 增强信号）
+    # 先构建临时 output 用于传给 _detect_market_phase 做增强
+    temp_output = {
+        "diagnostics": diag,
+        "cross_period": cross,
+        "trajectory_analysis": traj,
+        "rankings": result,
+    }
+    market_phase_enhanced = _detect_market_phase(period_returns=temp_output)
+
     # 保存到文件
     output = {
         "updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "auto_rating": profit_level,
+        "market_phase": market_phase_enhanced,
         "diagnostics": diag,
         "cross_period": cross,
         "trajectory_analysis": traj,
@@ -1315,11 +1881,17 @@ def main():
     # Step 2: 批量获取实时行情
     qt_data = fetch_recent_klines(stocks)
 
-    # Step 3: Wiki 框架打分
-    scored = compute_wiki_scores(stocks, qt_data)
+    # Step 3: Wiki 框架打分（先检测市场阶段 + 前视镜身份，用于打分）
+    market_phase = _detect_market_phase()
+    print(f"\n  [阶段检测] {market_phase['phase']} (得分{market_phase['score']}, 置信度{market_phase['confidence']})")
+    identities = _compute_market_identity(stocks, qt_data)
+    leader_count = sum(1 for v in identities.values() if v.get("is_industry_leader"))
+    limit_up_count = sum(1 for v in identities.values() if v.get("is_limit_up"))
+    print(f"  [身份识别] 行业龙头{leader_count}只 涨停{limit_up_count}只")
+    scored = compute_wiki_scores(stocks, qt_data, market_phase, identities)
 
     # Step 4: 构建选股池
-    pool = build_stock_pool(scored)
+    pool = build_stock_pool(scored, market_phase)
 
     # Step 4.5: 通过 K 线 API 获取准确的周期涨跌幅
     kline_returns = fetch_period_returns_via_klines(stocks)
