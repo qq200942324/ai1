@@ -1,10 +1,10 @@
 {
-  "last_update": "2026-06-03T15:18:28.218464",
+  "last_update": "2026-06-04T15:32:02.091525",
   "window_days": 20,
-  "date_range": "2026-05-14 ~ 2026-06-03",
+  "date_range": "2026-05-15 ~ 2026-06-04",
   "market_indices": 8,
-  "news_total": 7781,
-  "last_analysis": "2026-06-03T15:18:28.218464",
-  "last_stock_pool": "2026-06-01T06:39:46.230490",
-  "last_pipeline_run": "2026-06-03T15:21:03.761764"
+  "news_total": 7787,
+  "last_analysis": "2026-06-04T15:32:02.091525",
+  "last_stock_pool": "2026-06-04T15:34:24.855195",
+  "last_pipeline_run": "2026-06-04T15:34:37.510618"
 }
