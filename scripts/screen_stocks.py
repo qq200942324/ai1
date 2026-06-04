@@ -21,7 +21,7 @@ import os
 import sys
 import time
 import requests
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, time
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -39,6 +39,8 @@ VAULT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(VAULT_ROOT, "2-wiki", "data")
 OUTPUT_FILE = os.path.join(DATA_DIR, "stock_pool.json")
 OUTPUT_PERIOD_FILE = os.path.join(DATA_DIR, "market", "period_returns.json")  # 多周期涨幅排名
+CACHE_FILE = os.path.join(DATA_DIR, "market", "stock_klines_cache.json")  # K线本地缓存
+CACHE_TTL_SECONDS = 300  # 缓存有效期：5分钟（盘中K线实时变动，超时需重抓）
 
 MIN_CAP_YI = 80  # 最低流通市值（亿）— 交易池门槛
 DATA_COLLECT_MIN_CAP_YI = 50  # 数据收集门槛（亿）— 低于此的不入库
@@ -1069,10 +1071,54 @@ def _get_market_prefix(code):
     return "sh" if code.startswith(("6", "9")) else "sz"
 
 
+def _is_trading_time():
+    """判断当前是否在 A 股连续竞价时段（9:30-11:30 / 13:00-15:00，周一至周五）
+
+    盘中和盘后的缓存策略不同：
+      - 盘中 K 线实时变动 → 短 TTL 防过期
+      - 盘后/周末 K 线已定格 → 同一天不重复抓
+    """
+    now = datetime.now()
+    if now.weekday() >= 5:  # 周六日
+        return False
+    t = now.time()
+    return (time(9, 30) <= t <= time(11, 30)) or (time(13, 0) <= t <= time(15, 0))
+
+
+# ============================================================
+# K线本地缓存（避免重复抓取 98% 的历史数据）
+# ============================================================
+
+def load_klines_cache():
+    """加载本地K线缓存，不存在或读取失败返回空"""
+    if not os.path.exists(CACHE_FILE):
+        return {"stocks": {}}
+    try:
+        with open(CACHE_FILE, "r", encoding="utf-8") as f:
+            cache = json.load(f)
+            if not isinstance(cache, dict) or "stocks" not in cache:
+                return {"stocks": {}}
+            return cache
+    except (json.JSONDecodeError, IOError):
+        return {"stocks": {}}
+
+
+def save_klines_cache(cache):
+    """保存缓存到本地JSON，失败不影响主流程"""
+    try:
+        os.makedirs(os.path.dirname(CACHE_FILE), exist_ok=True)
+        with open(CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(cache, f, ensure_ascii=False)
+    except IOError:
+        pass
+
+
 def _fetch_single_stock_klines(code, market_prefix, days=45):
     """获取单只个股的日K线数据（腾讯 K 线 API）
 
     默认请求 45 个交易日，足够计算 5/10/20/40 日四个周期的区间涨跌幅。
+
+    Returns: (code, closes_list, dates_list)
     """
     url = "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get"
     params = {"param": f"{market_prefix}{code},day,,,{days},qfq"}
@@ -1082,24 +1128,31 @@ def _fetch_single_stock_klines(code, market_prefix, days=45):
         r.raise_for_status()
         data = r.json()
         if data.get("code") != 0:
-            return code, []
+            return code, [], []
         inner = data.get("data", {}).get(f"{market_prefix}{code}", {})
         klines = inner.get("day", []) or inner.get("qfqday", [])
-        # 提取收盘价序列
+        # 提取收盘价和日期
         closes = []
+        dates = []
         for line in klines:
             if len(line) >= 3:
                 try:
+                    dates.append(str(line[0]))
                     closes.append(float(line[2]))
                 except (ValueError, TypeError):
                     continue
-        return code, closes
+        return code, closes, dates
     except Exception:
-        return code, []
+        return code, [], []
 
 
 def fetch_period_returns_via_klines(stocks, max_workers=15):
-    """通过 K 线数据批量计算准确的多周期涨跌幅。
+    """通过 K 线数据批量计算准确的多周期涨跌幅，带本地缓存加速。
+
+    三阶段逻辑：
+      1. 缓存命中（当日已抓）→ 跳过API，直接用缓存计算
+      2. 缓存过期（有旧数据）→ 只请求 5 条K线，日期去重合并后计算
+      3. 缓存缺失 → 请求 45 条K线（和之前一样）
 
     返回: dict[code] → {ret_1d, ret_3d, ret_5d, ret_10d, ret_20d, ret_40d, valid}
     valid=False 表示数据不足以计算（新股或API失败）
@@ -1107,58 +1160,171 @@ def fetch_period_returns_via_klines(stocks, max_workers=15):
     print(f"\n[STOCK] Step 4.5: 通过 K 线 API 计算准确周期涨跌幅...")
     print(f"  并发线程: {max_workers} | 股票数: {len(stocks)} | 周期: 1/3/5/10/20/40日")
 
+    cache = load_klines_cache()
+    now = datetime.now()
+
+    # 双模式 freshness 判断：
+    #   盘中（9:30-15:00）：K线实时变动 → 短 TTL 防数据过期
+    #   盘后/盘前/周末：K线已定格 → 同一天内不重复抓
+    cache_is_fresh = False
+    cache_updated_str = cache.get("updated", "")
+    if cache_updated_str:
+        if _is_trading_time():
+            # 盘中模式：ISO 时间戳 + TTL
+            try:
+                last_update = datetime.fromisoformat(cache_updated_str)
+                if (now - last_update).total_seconds() < CACHE_TTL_SECONDS:
+                    cache_is_fresh = True
+            except (ValueError, TypeError):
+                pass
+        else:
+            # 收盘后模式：同一天不重复抓（[:10] 截取日期，兼容 ISO 和旧版纯日期格式）
+            cache_is_fresh = (cache_updated_str[:10] == now.strftime("%Y-%m-%d"))
+
+    cache_stocks = cache.get("stocks", {})
+    name_map = {s["code"]: s.get("name", "?") for s in stocks}
+
+    # ===== 阶段1：按缓存状态分类 =====
+    # all_closes: code → {"closes": [...], "name": "...", "dates": [...]}
+    all_closes = {}
+    stale_list = []   # 需补抓 5 条（缓存日期旧）
+    miss_list = []    # 需全抓 45 条（无缓存）
+
+    for s in stocks:
+        code = s["code"]
+        entry = cache_stocks.get(code)
+        if cache_is_fresh and entry and len(entry.get("closes", [])) > 0:
+            # 🟢 缓存命中：当日已抓过，直接用缓存
+            all_closes[code] = {
+                "closes": entry["closes"],
+                "name": entry.get("name", name_map.get(code, "?")),
+                "dates": entry.get("dates", []),
+            }
+        elif entry and len(entry.get("closes", [])) > 0:
+            # 🟡 缓存过期：只补抓 5 条，后续与旧数据合并
+            stale_list.append(s)
+        else:
+            # 🔴 无缓存：全量抓取 45 条
+            miss_list.append(s)
+
+    cache_hit_count = len(all_closes)
+    print(f"  缓存命中: {cache_hit_count} | 需补抓(5条): {len(stale_list)} | 需全抓(45条): {len(miss_list)}")
+
+    # ===== 阶段2：API 抓取（仅针对需抓的） =====
+    # fetch_tasks: [(stock_dict, days, old_cache_entry_or_None), ...]
+    fetch_tasks = []
+    for s in stale_list:
+        fetch_tasks.append((s, 5, cache_stocks.get(s["code"])))
+    for s in miss_list:
+        fetch_tasks.append((s, 45, None))
+
+    api_completed = 0
+    api_total = len(fetch_tasks)
+
+    if fetch_tasks:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {}
+            for s, days, old_entry in fetch_tasks:
+                code = s["code"]
+                prefix = _get_market_prefix(code)
+                futures[executor.submit(_fetch_single_stock_klines, code, prefix, days)] = (s, days, old_entry)
+
+            for future in as_completed(futures):
+                code, closes, dates = future.result()
+                s, days, old_entry = futures[future]
+                api_completed += 1
+
+                if days == 5 and old_entry:
+                    # 合并：以日期为 key 去重，保留最后 45 条
+                    old_closes = old_entry.get("closes", [])
+                    old_dates = old_entry.get("dates", [])
+
+                    date_map = {}
+                    for i, d in enumerate(old_dates):
+                        if i < len(old_closes):
+                            date_map[d] = old_closes[i]
+                    for i, d in enumerate(dates):
+                        if i < len(closes):
+                            date_map[d] = closes[i]  # 新数据覆盖同日旧数据
+
+                    sorted_dates = sorted(date_map.keys())
+                    merged_closes = [date_map[d] for d in sorted_dates[-45:]]
+                    merged_dates = sorted_dates[-45:]
+
+                    all_closes[code] = {
+                        "closes": merged_closes,
+                        "name": old_entry.get("name", name_map.get(code, "?")),
+                        "dates": merged_dates,
+                    }
+                else:
+                    all_closes[code] = {
+                        "closes": closes,
+                        "name": name_map.get(code, "?"),
+                        "dates": dates,
+                    }
+
+                if api_completed % 500 == 0:
+                    print(f"  API已处理 {api_completed}/{api_total} 只...")
+
+    if api_completed:
+        print(f"  API抓取完成: {api_completed}/{api_total} 只")
+
+    # ===== 阶段3：统一计算周期涨跌幅 =====
     results = {}
-    completed = 0
-    total = len(stocks)
+    valid_count = 0
+    has_40d_count = 0
 
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {}
-        for s in stocks:
-            code = s["code"]
-            prefix = _get_market_prefix(code)
-            futures[executor.submit(_fetch_single_stock_klines, code, prefix, 45)] = code
+    for code, data in all_closes.items():
+        closes = data["closes"]
 
-        for future in as_completed(futures):
-            code, closes = future.result()
-            completed += 1
+        if len(closes) >= 45:
+            # ≥45条K线：可计算全部 6 个周期（1/3/5/10/20/40日）
+            current = closes[-1]
+            ret_1d = round((current / closes[-2] - 1) * 100, 2) if closes[-2] != 0 else 0
+            ret_3d = round((current / closes[-4] - 1) * 100, 2) if closes[-4] != 0 else 0
+            ret_5d = round((current / closes[-6] - 1) * 100, 2) if closes[-6] != 0 else 0
+            ret_10d = round((current / closes[-11] - 1) * 100, 2) if closes[-11] != 0 else 0
+            ret_20d = round((current / closes[-21] - 1) * 100, 2) if closes[-21] != 0 else 0
+            ret_40d = round((current / closes[-41] - 1) * 100, 2) if closes[-41] != 0 else 0
+            results[code] = {"ret_1d": ret_1d, "ret_3d": ret_3d, "ret_5d": ret_5d, "ret_10d": ret_10d, "ret_20d": ret_20d, "ret_40d": ret_40d, "valid": True, "has_40d": True}
+            valid_count += 1
+            has_40d_count += 1
+        elif len(closes) >= 25:
+            # 25-44条K线：可计算 1/3/5/10/20日，但不够算 40 日
+            current = closes[-1]
+            ret_1d = round((current / closes[-2] - 1) * 100, 2) if closes[-2] != 0 else 0
+            ret_3d = round((current / closes[-4] - 1) * 100, 2) if closes[-4] != 0 else 0
+            ret_5d = round((current / closes[-6] - 1) * 100, 2) if closes[-6] != 0 else 0
+            ret_10d = round((current / closes[-11] - 1) * 100, 2) if closes[-11] != 0 else 0
+            ret_20d = round((current / closes[-21] - 1) * 100, 2) if closes[-21] != 0 else 0
+            results[code] = {"ret_1d": ret_1d, "ret_3d": ret_3d, "ret_5d": ret_5d, "ret_10d": ret_10d, "ret_20d": ret_20d, "ret_40d": 0, "valid": True, "has_40d": False}
+            valid_count += 1
+        elif len(closes) >= 6:
+            # 只有部分数据（可能是新股），只计算短周期
+            current = closes[-1]
+            ret_1d = round((current / closes[-2] - 1) * 100, 2) if closes[-2] != 0 else 0
+            ret_3d = round((current / closes[-4] - 1) * 100, 2) if len(closes) >= 4 and closes[-4] != 0 else 0
+            ret_5d = round((current / closes[-6] - 1) * 100, 2) if closes[-6] != 0 else 0
+            ret_10d = round((current / closes[-1] - 1) * 100, 2) if len(closes) >= 11 and closes[-11] != 0 else 0
+            results[code] = {"ret_1d": ret_1d, "ret_3d": ret_3d, "ret_5d": ret_5d, "ret_10d": ret_10d, "ret_20d": 0, "ret_40d": 0, "valid": False, "has_40d": False}
+        else:
+            results[code] = {"ret_1d": 0, "ret_3d": 0, "ret_5d": 0, "ret_10d": 0, "ret_20d": 0, "ret_40d": 0, "valid": False, "has_40d": False}
 
-            if len(closes) >= 45:
-                # ≥45条K线：可计算全部 6 个周期（1/3/5/10/20/40日）
-                # 45 条确保 40 日涨幅的参考点距离上市日至少 4 个交易日，排除 IPO 首日噪音
-                current = closes[-1]
-                ret_1d = round((current / closes[-2] - 1) * 100, 2) if len(closes) >= 2 and closes[-2] != 0 else 0
-                ret_3d = round((current / closes[-4] - 1) * 100, 2) if closes[-4] != 0 else 0
-                ret_5d = round((current / closes[-6] - 1) * 100, 2) if closes[-6] != 0 else 0
-                ret_10d = round((current / closes[-11] - 1) * 100, 2) if closes[-11] != 0 else 0
-                ret_20d = round((current / closes[-21] - 1) * 100, 2) if closes[-21] != 0 else 0
-                ret_40d = round((current / closes[-41] - 1) * 100, 2) if closes[-41] != 0 else 0
-                results[code] = {"ret_1d": ret_1d, "ret_3d": ret_3d, "ret_5d": ret_5d, "ret_10d": ret_10d, "ret_20d": ret_20d, "ret_40d": ret_40d, "valid": True, "has_40d": True}
-            elif len(closes) >= 25:
-                # 25-44条K线：可计算 1/3/5/10/20日，但不够算 40 日
-                current = closes[-1]
-                ret_1d = round((current / closes[-2] - 1) * 100, 2) if len(closes) >= 2 and closes[-2] != 0 else 0
-                ret_3d = round((current / closes[-4] - 1) * 100, 2) if closes[-4] != 0 else 0
-                ret_5d = round((current / closes[-6] - 1) * 100, 2) if closes[-6] != 0 else 0
-                ret_10d = round((current / closes[-11] - 1) * 100, 2) if closes[-11] != 0 else 0
-                ret_20d = round((current / closes[-21] - 1) * 100, 2) if closes[-21] != 0 else 0
-                results[code] = {"ret_1d": ret_1d, "ret_3d": ret_3d, "ret_5d": ret_5d, "ret_10d": ret_10d, "ret_20d": ret_20d, "ret_40d": 0, "valid": True, "has_40d": False}
-            elif len(closes) >= 6:
-                # 只有部分数据（可能是新股），只计算短周期
-                current = closes[-1]
-                ret_1d = round((current / closes[-2] - 1) * 100, 2) if len(closes) >= 2 and closes[-2] != 0 else 0
-                ret_3d = round((current / closes[-4] - 1) * 100, 2) if len(closes) >= 4 and closes[-4] != 0 else 0
-                ret_5d = round((current / closes[-6] - 1) * 100, 2) if closes[-6] != 0 else 0
-                ret_10d = round((current / closes[-1] - 1) * 100, 2) if len(closes) >= 11 and closes[-11] != 0 else 0
-                results[code] = {"ret_1d": ret_1d, "ret_3d": ret_3d, "ret_5d": ret_5d, "ret_10d": ret_10d, "ret_20d": 0, "ret_40d": 0, "valid": False, "has_40d": False}
-            else:
-                results[code] = {"ret_1d": 0, "ret_3d": 0, "ret_5d": 0, "ret_10d": 0, "ret_20d": 0, "ret_40d": 0, "valid": False, "has_40d": False}
+    # ===== 阶段4：保存缓存 =====
+    new_cache = {"updated": now.isoformat(), "stocks": {}}
+    for code, data in all_closes.items():
+        entry_dates = data.get("dates", [])
+        last_date = entry_dates[-1][:10] if entry_dates else now.strftime("%Y-%m-%d")
+        new_cache["stocks"][code] = {
+            "name": data["name"],
+            "closes": data["closes"],
+            "dates": entry_dates,
+            "last_date": last_date,
+        }
+    save_klines_cache(new_cache)
 
-            if completed % 500 == 0:
-                print(f"  已处理 {completed}/{total} 只...")
-
-    valid_count = sum(1 for v in results.values() if v["valid"])
-    has_40d_count = sum(1 for v in results.values() if v.get("has_40d"))
-    print(f"  [OK] {valid_count}/{total} 只有效K线数据（≥25日），其中 {has_40d_count} 只可计算40日涨幅")
+    print(f"  [OK] {valid_count}/{len(stocks)} 只有效K线数据（≥25日），其中 {has_40d_count} 只可计算40日涨幅")
+    print(f"  缓存已保存 → {CACHE_FILE}")
     return results
 
 

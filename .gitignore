@@ -28,6 +28,7 @@ scripts/.env
 2-wiki/data/market/indices_by_date.json
 2-wiki/data/news/news_master.json
 2-wiki/data/stock_pool.json
+2-wiki/data/market/stock_klines_cache.json
 
 # ============================================================
 # 二进制源文件（1-sources 中的 .doc/.pptx/.pdf）
