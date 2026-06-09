@@ -1,81 +1,156 @@
 ---
 tags: [数据, 新闻]
-created: 2026-06-08
-updated: 2026-06-08
+created: 2026-06-10
+updated: 2026-06-10
 ---
 
 # A股新闻消息面摘要
-> 更新时间：2026-06-08 19:30 | 覆盖：2026-05-19 ~ 2026-06-08 | 总条数：8094
+> 更新时间：2026-06-10 04:02 | 覆盖：2026-05-21 ~ 2026-06-10 | 总条数：8010
 
 ## 每日新闻量
 
 | 日期 | 条数 |
 |------|------|
-| 2026-06-08 | 1434 |
-| 2026-06-07 | 520 |
-| 2026-06-06 | 368 |
-| 2026-06-05 | 1182 |
+| 2026-06-10 | 62 |
+| 2026-06-09 | 1881 |
+| 2026-06-08 | 1254 |
+| 2026-06-07 | 197 |
+| 2026-06-06 | 250 |
+| 2026-06-05 | 755 |
 | 2026-06-04 | 694 |
-| 2026-06-03 | 786 |
-| 2026-06-02 | 685 |
+| 2026-06-03 | 499 |
+| 2026-06-02 | 265 |
 | 2026-06-01 | 279 |
 | 2026-05-31 | 172 |
 | 2026-05-30 | 101 |
 | 2026-05-29 | 225 |
 | 2026-05-28 | 274 |
-| 2026-05-27 | 269 |
+| 2026-05-27 | 268 |
 | 2026-05-26 | 211 |
 | 2026-05-25 | 236 |
 | 2026-05-24 | 155 |
-| 2026-05-23 | 114 |
-| 2026-05-22 | 148 |
-| 2026-05-21 | 102 |
-| 2026-05-20 | 82 |
+| 2026-05-23 | 73 |
+| 2026-05-22 | 57 |
 
 ## 近7日要闻
 
-### 2026-06-08（1434 条）
+### 2026-06-10（62 条）
 
-**行业板块** (883 条)：
-- [独立向上！农业银行涨超3%，百亿银行ETF华宝（512800）逆市冲高1%，机会如何？基金经理火速解读](https://finance.sina.com.cn/money/fund/etf/2026-06-08/doc-iniatatn7000380.shtml) `19:25`
-- [茅台酱香酒线上渠道显著扩张！吃喝板块逆市显韧性，华宝基金食品饮料ETF（515710）收跌1.41%](https://finance.sina.com.cn/money/fund/etf/2026-06-08/doc-iniatatn6999973.shtml) `19:24`
-- [恒生科技跌超2.7%，大型科网股跳水！油气、煤炭股集体上涨，山东墨龙涨超25%](https://finance.sina.com.cn/stock/marketresearch/2026-06-08/doc-iniatatk5360922.shtml) `19:23`
-- [网易支付被罚220.4万元：违反数据安全管理规定等](https://finance.sina.com.cn/jryx/fd/2026-06-08/doc-iniatatq3776955.shtml) `19:23`
-- [光模块再踩刹车，高“光”创业板人工智能ETF（159363）三连跌，情绪“错杀”还是行情见顶？机构火线解读](https://finance.sina.com.cn/money/fund/etf/2026-06-08/doc-iniatatn6999627.shtml) `19:23`
-- [大热赛道突遭重挫，MLCC首当其冲，多股跌停！华宝基金军工ETF（512810）年内新低，场内放量溢价](https://finance.sina.com.cn/money/fund/etf/2026-06-08/doc-iniatatn6999296.shtml) `19:22`
-- [三大指数集体大跌！高股息逆市走强，华宝基金银行ETF（512800）冲高1%！AI硬件跳水，科创芯片ETF收跌4.46%](https://finance.sina.com.cn/money/fund/etf/2026-06-08/doc-iniatatq3776063.shtml) `19:21`
-- [有色ETF重挫5.8%，获资金净申购360万份！宏观情绪扰动，基本面并未恶化！机构：超跌或迎布局窗口！](https://finance.sina.com.cn/money/fund/etf/2026-06-08/doc-iniatatq3774989.shtml) `19:19`
-- [三大指数集体重挫，沪指失守4000点，银行、机器人等概念逆市走强  | 华宝基金3A日报（2026.6.8）](https://finance.sina.com.cn/money/fund/etf/2026-06-08/doc-iniatath8581160.shtml) `19:17`
-- [又跌停！嘉美包装：新东家质押2.47亿股](https://finance.sina.com.cn/wm/2026-06-08/doc-iniatatk5356463.shtml) `19:13`
-  > ... 还有 873 条
+**行业板块** (2 条)：
+- [伊朗议员告诉迈赫尔通讯社：针对特朗普的威胁 武装力量已全面戒备](https://finance.sina.com.cn/world/2026-06-10/doc-iniawawe2896441.shtml) `03:59`
+- [黄金跌势扩大 伊朗局势再度引发通胀担忧](https://finance.sina.com.cn/world/2026-06-10/doc-iniawawa6119110.shtml) `03:59`
 
-**国际财经** (58 条)：
-- [U2 正式亮相：原生可执行Agent大模型，云知声跳出参数竞赛](https://finance.sina.com.cn/tech/it/2026-06-08/doc-iniaswms3893790.shtml) `18:53`
-- [天生多屏！中兴云电脑解锁 AI 全场景新生活](https://finance.sina.com.cn/tech/mobile/n/n/2026-06-08/doc-iniaswms3893308.shtml) `18:52`
-- [朝阳轮胎立大功！媒体实测问界M6 NVH：动态表现超宝马i7](https://finance.sina.com.cn/tech/discovery/2026-06-08/doc-iniatatn6989065.shtml) `18:49`
-- [星空顶可收纳：鸿蒙智行尊界 V800 细节曝光，新车有望成为中国首款百万级 MPV](https://finance.sina.com.cn/tech/digi/2026-06-08/doc-iniaswmk8701488.shtml) `18:45`
-- [百度网盘 618 探底再来：SVIP 超级会员 13.5 元 / 月、162 元 / 年](https://finance.sina.com.cn/tech/digi/2026-06-08/doc-iniaswmk8701391.shtml) `18:45`
-- [阿里巴巴升级大模型组织架构 成立Token Foundry事业部](https://finance.sina.com.cn/roll/2026-06-08/doc-iniaswmq7085313.shtml) `17:43`
-- [消息称三星将为欧版、韩版 Galaxy Z Flip8 小折叠手机配备 Exynos 2600 芯片](https://finance.sina.com.cn/tech/digi/2026-06-08/doc-iniaswmk8667514.shtml) `17:31`
-- [奇瑞：与塔塔集团合作为零部件供应，没有在印度市场直接投资和技术转让等安排](https://finance.sina.com.cn/roll/2026-06-08/doc-iniaswmk8655156.shtml) `17:14`
-- [Q1全球半导体设备市场创365.5亿美元新高！中国大陆稳居第一](https://finance.sina.com.cn/tech/roll/2026-06-08/doc-iniaswmk8657723.shtml) `17:09`
-- [零一汽车港股IPO：经销渠道收入占比显著异于同行且存在第三方回款 无人重卡收入不足千万占比仅1.5%](https://finance.sina.com.cn/stock/observe/2026-06-08/doc-iniaswmn5425636.shtml) `17:03`
-  > ... 还有 48 条
+**A股沪深** (60 条)：
+- [摩根士丹利G10外汇策略主管：美联储将维持利率不变 美元将走弱](https://finance.sina.com.cn/world/2026-06-10/doc-iniawawe2895770.shtml) `03:57`
+- [马来西亚芯片出口今年有望突破1970亿美元](https://finance.sina.com.cn/stock/usstock/c/2026-06-10/doc-iniawawa6117231.shtml) `03:53`
+- [庞巴迪承诺投资1亿新元扩建新加坡公务机枢纽](https://finance.sina.com.cn/stock/usstock/c/2026-06-10/doc-iniawawa6116826.shtml) `03:52`
+- [传Oatly中国业务管理层酝酿收购，股价年内跌超35%](https://finance.sina.com.cn/stock/usstock/c/2026-06-10/doc-iniawawi1518729.shtml) `03:51`
+- [马来亚银行投入49亿美元支持柔新经济特区](https://finance.sina.com.cn/stock/usstock/c/2026-06-10/doc-iniawawi1517833.shtml) `03:49`
+- [西捷航空拒绝加拿大1.5亿加元航空贷款计划](https://finance.sina.com.cn/stock/usstock/c/2026-06-10/doc-iniawawf4741326.shtml) `03:48`
+- [SpaceX IPO已获100亿美元级机构订单，募资规模达750亿美元](https://finance.sina.com.cn/stock/usstock/c/2026-06-10/doc-iniawawa6114989.shtml) `03:47`
+- [iOS 27代码揭示苹果2000美元折叠iPhone新线索](https://finance.sina.com.cn/stock/usstock/c/2026-06-10/doc-iniawawi1516729.shtml) `03:46`
+- [彭博研究：英国重返欧盟可挽回至多1.2%的经济损失](https://finance.sina.com.cn/stock/usstock/c/2026-06-10/doc-iniawawi1515961.shtml) `03:44`
+- [贝莱德推出太空ETF，该行业已吸引80亿美元资金流入](https://finance.sina.com.cn/stock/usstock/c/2026-06-10/doc-iniawawa6113442.shtml) `03:43`
+  > ... 还有 50 条
 
-**A股沪深** (304 条)：
-- [苹果WWDC 2026看点前瞻：库克将交出怎样的最后一棒？](https://finance.sina.com.cn/stock/usstock/c/2026-06-08/doc-iniaswmn5466366.shtml) `18:30`
-- [马斯克即将成为全球首位万亿富豪，一万亿美元到底是什么概念？](https://finance.sina.com.cn/stock/usstock/c/2026-06-08/doc-iniaswmk8689534.shtml) `18:28`
-- [刘强东的“不裁员承诺”与京东的“AI狂飙”](https://finance.sina.com.cn/stock/s/2026-06-08/doc-iniaswmn5466222.shtml) `18:26`
-- [各大美妆巨头全力押注长寿护肤赛道，我的实地体验全记录](https://finance.sina.com.cn/stock/usstock/c/2026-06-08/doc-iniaswmn5461994.shtml) `18:21`
-- [六个核桃卖不动，养元饮品去赌芯片了？](https://finance.sina.com.cn/stock/s/2026-06-08/doc-iniaswms3877130.shtml) `18:12`
-- [国家数据局：培育一批数据标注龙头企业、独角兽企业、瞪羚企业，壮大数据标注产业](https://finance.sina.com.cn/jjxw/2026-06-08/doc-iniaswmk8681718.shtml) `18:08`
-- [英特尔曾濒临衰败，人工智能赛道变局或将助力其涅槃重生](https://finance.sina.com.cn/stock/usstock/c/2026-06-08/doc-iniaswms3872908.shtml) `18:07`
-- [方洪波：美的的威胁从来都来自内部，从没说过小米是最大“竞对”](https://finance.sina.com.cn/tech/it/2026-06-08/doc-iniaswmn5453936.shtml) `18:05`
-- [国家数据局：探索词元交易等新型交易模式，构建以词元为基础，可量化、可定价的数据价值体系](https://finance.sina.com.cn/jjxw/2026-06-08/doc-iniaswmn5453798.shtml) `18:02`
-- [Meta公司向美联邦法院申请针对以色列软件公司的藐视法庭令](https://finance.sina.com.cn/stock/usstock/c/2026-06-08/doc-iniaswms3868935.shtml) `17:58`
-  > ... 还有 294 条
+### 2026-06-09（1881 条）
 
-**宏观政策** (189 条)：
+**A股沪深** (511 条)：
+- [摩根大通警示民众抵御物价上涨的缓冲空间正在收窄](https://finance.sina.com.cn/stock/usstock/c/2026-06-09/doc-iniavshp1698841.shtml) `23:58`
+- [SpaceX受热捧 IPO吸引到的机构投资者需求是供发售股份的数倍](https://finance.sina.com.cn/stock/usstock/c/2026-06-09/doc-iniavshk3071750.shtml) `23:55`
+- [欧盟监管机构勒令元宇宙向竞品AI聊天机器人免费开放WhatsApp接口](https://finance.sina.com.cn/stock/usstock/c/2026-06-09/doc-iniavshh6294481.shtml) `23:55`
+- [油价大跌4%创七周新低，伊朗与以色列暂停互相袭击](https://finance.sina.com.cn/stock/usstock/c/2026-06-09/doc-iniavshh6293790.shtml) `23:53`
+- [Apple Hospitality REIT公布2026年第二季度财报发布及电话会议日期](https://finance.sina.com.cn/stock/usstock/c/2026-06-09/doc-iniavshp1695559.shtml) `23:49`
+- [Werner荣获FreightWaves 2026年度“反欺诈斗士奖”](https://finance.sina.com.cn/stock/usstock/c/2026-06-09/doc-iniavshp1694972.shtml) `23:47`
+- [Tetra Tech被选为水电站大坝现代化改造项目首席设计师](https://finance.sina.com.cn/stock/usstock/c/2026-06-09/doc-iniavshh6291565.shtml) `23:45`
+- [Navan推出“Anywhere”跨平台差旅功能，首站集成Gemini Enterprise](https://finance.sina.com.cn/stock/usstock/c/2026-06-09/doc-iniavshp1693538.shtml) `23:44`
+- [美国北方信托公司任命Rebekah Rice为坦帕湾市场负责人](https://finance.sina.com.cn/stock/usstock/c/2026-06-09/doc-iniavshp1692263.shtml) `23:41`
+- [UHG证券欺诈诉讼首席原告申请周二夜间截止](https://finance.sina.com.cn/stock/usstock/c/2026-06-09/doc-iniavshk3065432.shtml) `23:39`
+  > ... 还有 501 条
+
+**行业板块** (1162 条)：
+- [比亚迪、蔚来回应被美列入“中国军工企业”名单](https://finance.sina.com.cn/stock/t/2026-06-09/doc-iniavshm4907090.shtml) `23:14`
+- [ST华谊又一宗司法拍卖落槌：王忠军所持2800万股溢价成交 湖北国资身影浮现|速读公告](https://finance.sina.com.cn/roll/2026-06-09/doc-iniavshp1681514.shtml) `23:14`
+- [比亚迪、蔚来回应被美列入“中国军工企业”名单](https://finance.sina.com.cn/roll/2026-06-09/doc-iniavshp1682915.shtml) `23:14`
+- [天玑科技多期财报更正，受损股民可进行预索赔登记](https://finance.sina.com.cn/stock/gmwq/rightscase/2026-06-09/doc-iniavshm4902712.shtml) `23:08`
+- [百迈科杨顶建：百万资金验资次日即转出 三无凭证走账第三方企业 历史出资行为是否构成抽逃出资？](https://finance.sina.com.cn/stock/roll/2026-06-09/doc-iniavshh6271737.shtml) `22:59`
+- [京东方陈炎顺：“无处不AI”的智能时代正在变成现实](https://finance.sina.com.cn/stock/relnews/cn/2026-06-09/doc-iniavshp1677753.shtml) `22:30`
+- [深夜，全线大涨！芯片股爆发！](https://finance.sina.com.cn/wm/2026-06-09/doc-iniavshm4882499.shtml) `22:23`
+- [比特币跌破62000美元，日内跌1.78%](https://finance.sina.com.cn/stock/t/2026-06-09/doc-iniavshh6254637.shtml) `22:18`
+- [超280亿元资金，逆势加仓](https://finance.sina.com.cn/jjxw/2026-06-09/doc-iniavshp1657509.shtml) `22:15`
+- [刚刚，赛力斯联合字节跳动，造了辆「怪物」](https://finance.sina.com.cn/stock/t/2026-06-09/doc-iniavshp1656978.shtml) `22:15`
+  > ... 还有 1152 条
+
+**宏观政策** (137 条)：
+- [小明围棋机器人杯男子乙组无全胜 贵州领跑女乙组](https://sports.sina.com.cn/go/2026-06-09/doc-iniavmyk6370816.shtml) `21:53`
+- [高海拔赛道见证巅峰对决 喜马拉雅越野跑圆满收官](https://sports.sina.com.cn/outdoor/news/2026-06-09/doc-iniavmyp4939157.shtml) `20:09`
+- [草原村排赛 以公益护航青少年体育与群众体育盛会](https://sports.sina.com.cn/o/2026-06-09/doc-iniavfsq3130787.shtml) `17:56`
+- [她的新主场——退役女运动员赋能支持计划再启新程](https://sports.sina.com.cn/others/others/2026-06-09/doc-iniauzkv1884129.shtml) `17:40`
+- [关注微信-狼王荐彩公推3连红+私推近15中13！](https://sports.sina.com.cn/l/2026-05-19/doc-inhykxfn3324466.shtml) `17:00`
+- [男子购彩十几年终擒大乐透611万:先买房改善生活](https://sports.sina.com.cn/l/2026-06-09/doc-iniauzks3190102.shtml) `15:56`
+- [智能英雄觉醒！你最Pick谁？关羽张飞赵云齐上阵](https://sports.sina.com.cn/l/2026-06-09/doc-iniauzkt5044077.shtml) `15:50`
+- [新浪彩票名家大乐透第26064期推荐汇总](https://sports.sina.com.cn/l/2026-06-09/doc-iniauzkv1843648.shtml) `15:43`
+- [历史上的今天-大乐透6月10日开奖号码汇总](https://sports.sina.com.cn/l/2026-06-09/doc-iniauzks3170922.shtml) `15:40`
+- [大乐透近10期周三奖号分布：0字头龙头近9期开8期](https://sports.sina.com.cn/l/2026-06-09/doc-iniauzks3167632.shtml) `15:31`
+  > ... 还有 127 条
+
+**国际财经** (71 条)：
+- [打破公路与越野的边界，Xaber 350越野电摩正式发布](https://finance.sina.com.cn/tech/elec/xpfb/2026-06-09/doc-iniavmyn3118779.shtml) `21:05`
+- [AIVA概念车Origin Concept亮相，首款量产车型AIVA ME7将于年内发布](https://finance.sina.com.cn/roll/2026-06-09/doc-iniavfsq3214278.shtml) `19:54`
+- [AIVA宣布携手火山引擎共同打造AI汽车体验，火山引擎提供豆包大模型、智能座舱等技术服务](https://finance.sina.com.cn/roll/2026-06-09/doc-iniavfsn6431061.shtml) `19:44`
+- [赛豆科技发布AIVA品牌，AIVA总裁解释品牌命名和LOGO寓意](https://finance.sina.com.cn/roll/2026-06-09/doc-iniavfsr5039595.shtml) `19:18`
+- [阿维塔回应赛豆新品牌AIVA“撞脸”：保留追责权](https://finance.sina.com.cn/jjxw/2026-06-09/doc-iniavfsr5033228.shtml) `19:04`
+- [中科闻歌通过港交所聆讯，港股将迎“通用决策大模型第一股”](https://finance.sina.com.cn/roll/2026-06-09/doc-iniavfst1797586.shtml) `18:49`
+- [与爱为舞创始人王琳：打造下一代学习Agent，将分三阶段技术演进路线](https://finance.sina.com.cn/roll/2026-06-09/doc-iniavfsq3167068.shtml) `18:44`
+- [蓝箭航天朱雀二号E遥六发射成功，计划进行手机直连卫星试验](https://finance.sina.com.cn/roll/2026-06-09/doc-iniavmyk6319999.shtml) `18:33`
+- [李佳琦直播间：618“他经济”升温 素颜霜等销量增速超150%](https://finance.sina.com.cn/roll/2026-06-09/doc-iniavfsr4998678.shtml) `18:14`
+- [依米康押中液冷风口：业绩持续高增长驱动因素是什么？存在哪些隐忧？](https://finance.sina.com.cn/stock/observe/2026-06-09/doc-iniavfsr4996149.shtml) `18:10`
+  > ... 还有 61 条
+
+### 2026-06-08（1254 条）
+
+**A股沪深** (450 条)：
+- [纽约联储调查：家庭对财务状况的担忧程度升至2022年7月以来最高水平](https://finance.sina.com.cn/stock/usstock/c/2026-06-08/doc-iniatpie5213151.shtml) `23:59`
+- [穆迪：美国寿险公司持有8070亿美元流动性最差信贷资产](https://finance.sina.com.cn/stock/usstock/c/2026-06-08/doc-iniatpik3633115.shtml) `23:57`
+- [美国众议院预计将于本周对一项700亿美元的移民资金法案进行投票](https://finance.sina.com.cn/stock/usstock/c/2026-06-08/doc-iniatpih6855816.shtml) `23:57`
+- [私募股权科技交易额暴跌70% AI担忧令投资者对估值越发谨慎](https://finance.sina.com.cn/stock/usstock/c/2026-06-08/doc-iniatpih6855536.shtml) `23:56`
+- [欧洲债市：德债和英债小幅走低 中东局势推升油价](https://finance.sina.com.cn/world/2026-06-08/doc-iniatpik3631994.shtml) `23:53`
+- [Carré携手可口可乐推出足球主题联名系列](https://finance.sina.com.cn/stock/usstock/c/2026-06-08/doc-iniatpia8435139.shtml) `23:52`
+- [ACI Sky™ Workbench获房利美和房地美认证，全面支持UAD 3.6评估规范](https://finance.sina.com.cn/stock/usstock/c/2026-06-08/doc-iniatpik3631189.shtml) `23:51`
+- [NCR Voyix将出席2026年RBC全球金融科技峰会](https://finance.sina.com.cn/stock/usstock/c/2026-06-08/doc-iniatpih6853671.shtml) `23:50`
+- [以色列总理确认暂停袭击伊朗](https://finance.sina.com.cn/stock/usstock/c/2026-06-08/doc-iniatxxi2139393.shtml) `23:49`
+- [尼克斯总决赛场边名人席拍出100万美元，创基金会单笔捐赠纪录](https://finance.sina.com.cn/stock/usstock/c/2026-06-08/doc-iniatpik3630411.shtml) `23:48`
+  > ... 还有 440 条
+
+**行业板块** (543 条)：
+- [深圳罗湖区笋岗中贸大厦概况介绍及写字楼办公室出租招租赁信息攻略指南](https://finance.sina.com.cn/wm/2026-06-08/doc-iniatpia8444670.shtml) `23:58`
+- [沪指跌破4000点，慌不慌？12家公募密集“心理按摩”火速来了！](https://finance.sina.com.cn/wm/2026-06-08/doc-iniatpie5211527.shtml) `23:51`
+- [11天飙涨112%！A股又一只翻倍牛股登场](https://finance.sina.com.cn/wm/2026-06-08/doc-iniatpih6853907.shtml) `23:43`
+- [2026年迄今销量TOP10车型出炉：小米YU7冲到第4](https://finance.sina.com.cn/stock/t/2026-06-08/doc-iniatpie5210637.shtml) `23:41`
+- [奇瑞集团：计划向塔塔集团提供汽车散件没有在印度市场直接投资和技术转让等安排](https://finance.sina.com.cn/stock/wbstock/2026-06-08/doc-iniatpia8438112.shtml) `23:38`
+- [国际金价一度失守4300美元！黄金ETF近一月“失血”260亿！机构紧急解盘：还能避险吗？](https://finance.sina.com.cn/wm/2026-06-08/doc-iniatpia8428820.shtml) `23:31`
+- [利好！2570亿元中央资金力挺城市更新](https://finance.sina.com.cn/wm/2026-06-08/doc-iniathze8553782.shtml) `23:16`
+- [跨境支付群雄逐“AI Agent”](https://finance.sina.com.cn/jjxw/2026-06-08/doc-iniathzn3745319.shtml) `23:10`
+- [香江控股无所畏惧](https://finance.sina.com.cn/wm/2026-06-08/doc-iniattra5120434.shtml) `23:08`
+- [潮州三环集团再次递表港交所](https://finance.sina.com.cn/stock/estate/integration/2026-06-08/doc-iniathze8554074.shtml) `23:06`
+  > ... 还有 533 条
+
+**国际财经** (75 条)：
+- [美团接入微信AI生态：将提供本地生活等AI服务体验](https://finance.sina.com.cn/roll/2026-06-08/doc-iniatpia8433267.shtml) `23:46`
+- [消息称华为鸿蒙 HarmonyOS 7 系统已开启对内部保密 Beta 用户推送](https://finance.sina.com.cn/tech/digi/2026-06-09/doc-iniatpie5208354.shtml) `23:37`
+- [阿维塔 07L 中大型 SUV 设计手稿公布，新车确认首搭华为乾崑智驾 ADS 5](https://finance.sina.com.cn/tech/digi/2026-06-09/doc-iniatpik3628392.shtml) `23:31`
+- [2026年迄今销量TOP10车型出炉：小米YU7冲到第4](https://finance.sina.com.cn/tech/roll/2026-06-09/doc-iniatpih6847306.shtml) `23:29`
+- [重磅突破！世界首台630℃二次再热百万千瓦机组投产](https://finance.sina.com.cn/tech/discovery/2026-06-09/doc-iniathzn3742323.shtml) `22:56`
+- [钉钉副总裁、AI表格负责人马锐拉宣布离职](https://finance.sina.com.cn/roll/2026-06-08/doc-iniathzh5318722.shtml) `22:50`
+- [同程旅行宣布将接入微信AI智能体，机票、酒店将实现AI一键预订](https://finance.sina.com.cn/roll/2026-06-08/doc-iniathzk6924907.shtml) `21:29`
+- [世界首台 630℃ 二次再热百万机组在山东投产发电，全球煤电领域首次实现热效突破 50%](https://finance.sina.com.cn/tech/digi/2026-06-09/doc-iniathzh5288268.shtml) `21:26`
+- [小米手环 9 新内测固件 3.1.26 版本开推：功耗优化、睡眠监测算法升级，支持更多车钥匙](https://finance.sina.com.cn/tech/digi/2026-06-09/doc-iniatatq3826111.shtml) `20:55`
+- [800分+用户哭了！新版芝麻分涨分直接变地狱模式](https://finance.sina.com.cn/tech/discovery/2026-06-09/doc-iniatatq3816956.shtml) `20:39`
+  > ... 还有 65 条
+
+**宏观政策** (186 条)：
+- [小明围棋机器人杯第3轮：男子乙组北京棋院负上海](https://sports.sina.com.cn/go/2026-06-08/doc-iniatatq3806038.shtml) `20:31`
+- [关注微信-逍遥红单昨日私推近5中4！看最新稳胆！](https://sports.sina.com.cn/l/2026-05-19/doc-inhykxfn3321502.shtml) `17:00`
 - [男子购彩三年擒大乐透1000万 想做的事情很多](https://sports.sina.com.cn/l/2026-06-08/doc-iniasscn8761822.shtml) `16:26`
 - [6月8日红王解盘比赛解读:北爱尔兰做客法国无惧压力](https://sports.sina.com.cn/l/2026-06-08/doc-iniasscn8747454.shtml) `16:00`
 - [烽烟弈道定胜负 围甲黔军上海滩载誉而归](https://sports.sina.com.cn/go/2026-06-08/doc-iniasscs7145468.shtml) `15:34`
@@ -84,11 +159,9 @@ updated: 2026-06-08
 - [[小炮APP]专家张然竞彩推荐：芬甲+巴西乙2串1](https://sports.sina.com.cn/l/2026-06-08/doc-iniasscq5493162.shtml) `15:08`
 - [065期老牛双色球预测奖号：蓝球推荐](https://sports.sina.com.cn/l/2026-06-08/doc-iniasscq5474262.shtml) `14:32`
 - [065期丁荣春双色球预测奖号：连号推荐](https://sports.sina.com.cn/l/2026-06-08/doc-iniasscq5473874.shtml) `14:31`
-- [精选足篮专家：辉红论球、胆定哥豪取16连红](https://sports.sina.com.cn/l/2026-06-08/doc-iniasscq5483715.shtml) `14:21`
-- [新浪彩票双色球名家第26065期推荐汇总](https://sports.sina.com.cn/l/2026-06-08/doc-iniasscu3879001.shtml) `14:14`
-  > ... 还有 179 条
+  > ... 还有 176 条
 
-### 2026-06-07（520 条）
+### 2026-06-07（197 条）
 
 **A股沪深** (96 条)：
 - [泽连斯基：将出席乌克兰与欧洲三国（E3）会谈](https://finance.sina.com.cn/stock/usstock/c/2026-06-07/doc-iniareak7678333.shtml) `22:59`
@@ -102,19 +175,6 @@ updated: 2026-06-08
 - [财务造假！派瑞股份将被ST](https://finance.sina.com.cn/stock/s/2026-06-07/doc-iniareah6098038.shtml) `22:00`
 - [金价跌穿4500美元 机构喊话：宽幅震荡还没完](https://finance.sina.com.cn/jjxw/2026-06-07/doc-iniaqxuk6223470.shtml) `21:50`
   > ... 还有 86 条
-
-**行业板块** (323 条)：
-- [视频|单只售价近28元!泡泡玛特跨界粽子遭二手加价，记者走访南京门店店员称暂无在售](https://finance.sina.com.cn/stock/2026-06-07/doc-iniareah6101678.shtml) `22:51`
-- [员工100%劳务派遣了?重庆啤酒参保人数仅两人,较2024年披露的3人减少1人](https://finance.sina.com.cn/stock/2026-06-07/doc-iniarean4452137.shtml) `22:47`
-- [突发！鼎龙股份五高管组团减持](https://finance.sina.com.cn/stock/relnews/cn/2026-06-07/doc-iniareae9323824.shtml) `22:36`
-- [张小龙炒股月赚5300万元？粉笔却市值蒸发超九成](https://finance.sina.com.cn/stock/relnews/hk/2026-06-07/doc-iniareae9324968.shtml) `22:36`
-- [京东方A：受体育赛事备货拉动等因素影响，2026年1月至4月各主流尺寸TV产品价格全面上涨](https://finance.sina.com.cn/stock/relnews/cn/2026-06-07/doc-iniareae9321980.shtml) `22:23`
-- [“618”告别低价混战，飞天茅台电商价普遍走高](https://finance.sina.com.cn/chanjing/jync/2026-06-07/doc-iniaqxuk6226187.shtml) `22:18`
-- [看走眼了？高盛一季度刚押注，派瑞股份就因“业绩化妆”将被ST](https://finance.sina.com.cn/stock/relnews/cn/2026-06-07/doc-iniaqxuk6227049.shtml) `22:16`
-- [从“千亿抢购”到“千元限购”，公募行业变了](https://finance.sina.com.cn/stock/zqgd/2026-06-07/doc-iniaqxuq4576479.shtml) `22:11`
-- [杰瑞股份：公司将充分发挥全产业链协同优势](https://finance.sina.com.cn/stock/relnews/cn/2026-06-07/doc-iniaqxuk6223107.shtml) `22:03`
-- [杰瑞股份：截至5月20日公司股东总户数为47251户](https://finance.sina.com.cn/stock/relnews/cn/2026-06-07/doc-iniaqxuk6223052.shtml) `22:03`
-  > ... 还有 313 条
 
 **宏观政策** (72 条)：
 - [小明围棋机器人杯团体赛第2日 男子乙组北京上海领跑](https://sports.sina.com.cn/go/2026-06-07/doc-iniaqxuq4552704.shtml) `21:06`
@@ -142,20 +202,7 @@ updated: 2026-06-08
 - [华为 MatePad Pro Max 旗舰平板确认支持《王者荣耀》144Hz 极致模式](https://finance.sina.com.cn/tech/digi/2026-06-08/doc-iniaqpem7602333.shtml) `15:35`
   > ... 还有 19 条
 
-### 2026-06-06（368 条）
-
-**行业板块** (118 条)：
-- [基金业协会完成换届，易方达基金董事长刘晓艳当选兼职会长](https://finance.sina.com.cn/wm/2026-06-06/doc-inianuvi0449769.shtml) `23:17`
-- [“站在光里”，17只基金翻倍了，有基金警告风险超160次](https://finance.sina.com.cn/wm/2026-06-06/doc-inianuve1645117.shtml) `22:50`
-- [基金业锚定“一流”目标，具体怎么干？业内大佬回应](https://finance.sina.com.cn/jjxw/2026-06-06/doc-inianuvk7217244.shtml) `22:24`
-- [视频丨中央考核巡查组现场要求：你把手机拿出来我看看](https://finance.sina.com.cn/jjxw/2026-06-06/doc-inianuvi0435833.shtml) `21:56`
-- [证监会主席吴清：基金行业服务投资者超过8.6亿人、渗透率达60%](https://finance.sina.com.cn/jjxw/2026-06-06/doc-inianuvi0432841.shtml) `21:40`
-- [农银汇理换帅](https://finance.sina.com.cn/money/fund/2026-06-06/doc-iniapryw9990497.shtml) `21:30`
-- [刚刚，4万亿掌门人当选公募基金新任会长！刘晓艳的新使命](https://finance.sina.com.cn/wm/2026-06-06/doc-inianqpm0547308.shtml) `20:02`
-- [去年60亿收购被否，华峰化学重启关联交易，尤氏家族两块资产再闯股东大会 | 长三角资本局](https://finance.sina.com.cn/stock/csjzbj/2026-06-06/doc-inianqpn7311487.shtml) `19:32`
-- [连续两年亏损后，盛洋科技拟募资10.76亿元扩产，卫星互联网项目仅获1.37亿元 | 长三角资本局](https://finance.sina.com.cn/stock/csjzbj/2026-06-06/doc-inianqpn7311281.shtml) `19:32`
-- [五洲特纸并购切入电解电容器纸，仅小规模量产，家族纸企寻找新增长点 | 长三角资本局](https://finance.sina.com.cn/stock/csjzbj/2026-06-06/doc-inianqpm0535033.shtml) `19:31`
-  > ... 还有 108 条
+### 2026-06-06（250 条）
 
 **A股沪深** (137 条)：
 - [阿斯麦：马斯克将出席公司闭门技术研讨会，磋商泰拉晶圆厂项目](https://finance.sina.com.cn/stock/usstock/c/2026-06-06/doc-inianuve1645941.shtml) `23:03`
@@ -190,7 +237,7 @@ updated: 2026-06-08
 - [瑞幸咖啡“去冰”到手仅半杯?客服：空余量会补齐，以门店实际制作为准](https://finance.sina.com.cn/tech/shenji/2026-06-06/doc-iniamtit8900790.shtml) `11:32`
 - [千百度拟控股AI数据服务商本原智数，纳入合并报表](https://finance.sina.com.cn/tech/shenji/2026-06-06/doc-iniamnzv8987031.shtml) `09:33`
 
-### 2026-06-05（1182 条）
+### 2026-06-05（755 条）
 
 **A股沪深** (511 条)：
 - [欧洲债市：欧洲政府债券下跌 追随美国国债跌势](https://finance.sina.com.cn/stock/usstock/c/2026-06-05/doc-iniakrwk8202922.shtml) `23:59`
@@ -217,19 +264,6 @@ updated: 2026-06-08
 - [双色球近10期周日奖号分布：蓝球1路码连开3期](https://sports.sina.com.cn/l/2026-06-05/doc-iniaiusq2887291.shtml) `15:31`
 - [双色球064期历史同期号码全汇总](https://sports.sina.com.cn/l/2026-06-05/doc-iniaiust1758359.shtml) `15:22`
   > ... 还有 131 条
-
-**行业板块** (427 条)：
-- [今晚，多只牛股澄清！](https://finance.sina.com.cn/wm/2026-06-05/doc-iniakrwk8193544.shtml) `23:05`
-- [向关联方借款未及时披露，ST晨鸣及多名高层收警示函](https://finance.sina.com.cn/roll/2026-06-05/doc-iniakrwk8189835.shtml) `22:52`
-- [全球资产深夜巨震，美股存储芯片全线重挫，美光科技、英特尔大跌6%，黄金日内跌超100美元](https://finance.sina.com.cn/wm/2026-06-05/doc-iniakrwf9347446.shtml) `22:51`
-- [发生了什么？贾成东、薛莉丽、雷涛……6月以来，多位知名基金经理发生变动](https://finance.sina.com.cn/stock/marketresearch/2026-06-05/doc-iniakrwk8189174.shtml) `22:48`
-- [净利增逾八成、订单超百亿，大金重工港股上市首日为何遇冷？](https://finance.sina.com.cn/jjxw/2026-06-05/doc-iniakrwk8187096.shtml) `22:41`
-- [私募基金纲领性制度落地，坚决制止滥设国有企业投资基金](https://finance.sina.com.cn/stock/roll/2026-06-05/doc-iniakrwk8188569.shtml) `22:39`
-- [深夜，全线大跌！美联储，突传加息大消息！](https://finance.sina.com.cn/wm/2026-06-05/doc-iniakmqm1538874.shtml) `22:31`
-- [深夜跳水！芯片股暴跌！美联储，加息大消息](https://finance.sina.com.cn/stock/marketresearch/2026-06-05/doc-iniakmqi9466379.shtml) `22:16`
-- [特朗普：我要爆个小料](https://finance.sina.com.cn/wm/2026-06-05/doc-iniakrwf9350594.shtml) `22:14`
-- [招商证券：非公开发行不超过300亿元公司债挂牌转让获上交所无异议函](https://finance.sina.com.cn/stock/relnews/cn/2026-06-05/doc-iniakmqm1535010.shtml) `22:10`
-  > ... 还有 417 条
 
 **国际财经** (103 条)：
 - [直播11小时！格力电器CMO谈“冰箱哮喘”，还想请消费者吃荔枝](https://finance.sina.com.cn/tob/2026-06-05/doc-iniakmqh2683753.shtml) `22:03`
@@ -285,87 +319,5 @@ updated: 2026-06-08
 - [不到一万即可入手，人形机器人价格大跳水](https://finance.sina.com.cn/jjxw/2026-06-04/doc-iniahaiq9235271.shtml) `20:35`
   > ... 还有 77 条
 
-### 2026-06-03（786 条）
-
-**A股沪深** (522 条)：
-- [Quantinuum IPO获得逾20倍的超额认购](https://finance.sina.com.cn/stock/usstock/c/2026-06-03/doc-iniaecsk0733741.shtml) `23:43`
-- [比特币跌至2月以来新低：加密货币与重磅IPO争夺市场流动性](https://finance.sina.com.cn/stock/usstock/c/2026-06-03/doc-iniaecsh3956240.shtml) `23:43`
-- [好市多交出一份扎实季报，但高估值令投资者保持警惕](https://finance.sina.com.cn/stock/usstock/c/2026-06-03/doc-iniaecsk0732736.shtml) `23:42`
-- [Palantir英国NHS数据合同遭遇议会强力阻击](https://finance.sina.com.cn/stock/usstock/c/2026-06-03/doc-iniaecsh3953039.shtml) `23:38`
-- [印孚瑟斯估值分析：DCF模型显示公允价格约11美元](https://finance.sina.com.cn/stock/usstock/c/2026-06-03/doc-iniaecsk0727674.shtml) `23:35`
-- [英特尔重磅发布18A至强6+芯片及机架级AI战略，股价应声大涨超6%](https://finance.sina.com.cn/stock/usstock/c/2026-06-03/doc-iniaecsk0725628.shtml) `23:32`
-- [AJG估值分析：DCF模型揭示内在价值302美元 vs 当前股价206美元](https://finance.sina.com.cn/stock/usstock/c/2026-06-03/doc-iniaecsk0723778.shtml) `23:29`
-- [瑞银看好AI动能，财报前上调甲骨文目标价至285美元](https://finance.sina.com.cn/stock/usstock/c/2026-06-03/doc-iniaecsh3945737.shtml) `23:27`
-- [鲁比奥重申美对伊军事行动已结束](https://finance.sina.com.cn/jjxw/2026-06-03/doc-iniaecsh3970190.shtml) `23:26`
-- [美银将迎4000名新人 打破人工智能引发的失业恐慌](https://finance.sina.com.cn/stock/usstock/c/2026-06-03/doc-iniaecsk0721884.shtml) `23:25`
-  > ... 还有 512 条
-
-**国际财经** (86 条)：
-- [摩根士丹利将向外部 AI 智能体开放其万亿美元规模资管业务接口](https://finance.sina.com.cn/tech/digi/2026-06-04/doc-iniacxkn0785270.shtml) `21:36`
-- [豆包将推付费版，第三方称上月月活首次下滑](https://finance.sina.com.cn/roll/2026-06-03/doc-iniacxkk4004332.shtml) `21:33`
-- [华为联合天津港发布新一代港口智能水平运输系统解决方案，可适配全球绝大多数传统集装箱码头](https://finance.sina.com.cn/tech/digi/2026-06-04/doc-iniacxkh2233111.shtml) `21:29`
-- [数据中心“基建潮”现状调研：布局重构，成本压降，算电协同制约瓶颈待破解](https://finance.sina.com.cn/jjxw/2026-06-03/doc-iniacxkh2231099.shtml) `21:28`
-- [李佳琦拿下奔驰！6月10日直播间开卖](https://finance.sina.com.cn/tob/2026-06-03/doc-iniacxkn0773774.shtml) `21:07`
-- [华为发布全新一代 1000V 组串式构网 PCS，系统循环效率提升至 97.8% 行业第一](https://finance.sina.com.cn/tech/digi/2026-06-04/doc-iniacxki0696147.shtml) `20:56`
-- [英特尔：到 2030 年，x86 架构预计将为八成数据中心服务器提供动力](https://finance.sina.com.cn/tech/digi/2026-06-04/doc-iniacxki0689457.shtml) `20:38`
-- [高管与经销商发生肢体冲突？奇瑞回应：纯属虚构和恶意造谣，已展开谣言溯源并报警](https://finance.sina.com.cn/roll/2026-06-03/doc-iniactam0811203.shtml) `20:15`
-- [何小鹏辟谣加价2万插队提车，已增开模具提升GX产能](https://finance.sina.com.cn/tob/2026-06-03/doc-iniactan4106602.shtml) `20:06`
-- [比亚迪执行副总裁李柯：正在开发人形机器人，可在家庭和门店落地](https://finance.sina.com.cn/tob/2026-06-03/doc-iniactak2338427.shtml) `20:01`
-  > ... 还有 76 条
-
-**宏观政策** (178 条)：
-- [湾区杯大棋士赛预选收官 柁嘉熹黄云嵩等14人出线](https://sports.sina.com.cn/go/2026-06-05/doc-iniaffcx2805646.shtml) `20:36`
-- [国际顶级户外IP落户莫干山 勇士部落走进浙江德清](https://sports.sina.com.cn/outdoor/news/2026-06-03/doc-iniactaq0891838.shtml) `20:30`
-- [向山向海向荒野 第二届搜狐极限探索者大会6月举行](https://sports.sina.com.cn/others/others/2026-06-03/doc-iniactak2347445.shtml) `20:28`
-- [大乐透铁粉58元套餐票揽23万 直言没想到能中](https://sports.sina.com.cn/l/2026-06-03/doc-iniacnuq4182494.shtml) `18:01`
-- [女士购彩试运气刮中体彩10万 给孩子做教育基金](https://sports.sina.com.cn/l/2026-06-03/doc-iniacnuq4181050.shtml) `17:59`
-- [《似水流年》英文版署名有漏 戴耀宗发布公开致歉](https://sports.sina.com.cn/golf/chinareport/2026-06-03/doc-iniacnup0880046.shtml) `17:45`
-- [第六届“湾区杯”中国围棋大棋士赛深圳宝安开幕](https://sports.sina.com.cn/go/2026-06-03/doc-iniacnun2415060.shtml) `17:31`
-- [[小炮APP]专家玉姐说彩竞彩推荐：国际赛2串1](https://sports.sina.com.cn/l/2026-06-03/doc-iniacnup0857624.shtml) `17:02`
-- [春兰杯竞猜获奖名单揭晓 中国代表团六人进八强](https://sports.sina.com.cn/go/2026-06-03/doc-iniachnr0956650.shtml) `16:02`
-- [火箭一夜4消息！卖申京换切特+退出字母哥争夺战？](https://sports.sina.com.cn/basketball/nba/2026-06-03/doc-iniachns4242914.shtml) `15:56`
-  > ... 还有 168 条
-
-### 2026-06-02（685 条）
-
-**A股沪深** (431 条)：
-- [哈马克表态：若通胀持续高企，美联储或出台调控举措](https://finance.sina.com.cn/stock/usstock/c/2026-06-02/doc-inhzzumh2988246.shtml) `23:58`
-- [维多集团警告称欧美国家仍未意识到石油供应短缺的严重性](https://finance.sina.com.cn/world/2026-06-02/doc-inhzzumh2987765.shtml) `23:55`
-- [美国关税政策反复扰动，瑞士4月腕表出口大幅下滑](https://finance.sina.com.cn/stock/usstock/c/2026-06-02/doc-inhzzumh2987266.shtml) `23:53`
-- [伯克希尔坚信美国人置业的“美国梦”仍将延续](https://finance.sina.com.cn/stock/usstock/c/2026-06-02/doc-inhzzumi1449161.shtml) `23:32`
-- [欧洲央行：黄金替代美元成全球官方储备第一大资产](https://finance.sina.com.cn/jjxw/2026-06-02/doc-inhzzumk4667390.shtml) `23:14`
-- [鲁比奥：伊朗在霍尔木兹海峡大范围布雷](https://finance.sina.com.cn/stock/usstock/c/2026-06-02/doc-inhzzumh2977973.shtml) `23:13`
-- [美国关键矿产倒计时：内华达州锑矿项目加速冲刺2027年大限](https://finance.sina.com.cn/stock/usstock/c/2026-06-02/doc-inhzzumk4658195.shtml) `23:12`
-- [房利美和房地美下挫 FHFA局长身兼代理情报总监引发质疑](https://finance.sina.com.cn/stock/usstock/c/2026-06-02/doc-inhzzumh2977444.shtml) `23:11`
-- [太空物流独角兽崛起：Impulse Space完成5亿美元D轮融资](https://finance.sina.com.cn/stock/usstock/c/2026-06-02/doc-inhzzumi1444464.shtml) `23:09`
-- [Niagen Bioscience强化NAD+全球领导地位 外部研究项目更名](https://finance.sina.com.cn/stock/usstock/c/2026-06-02/doc-inhzzumh2976932.shtml) `23:09`
-  > ... 还有 421 条
-
-**国际财经** (88 条)：
-- [华为凌霄子母路由 Q7 电线版星闪电竞专链功能首批支持机型公布，含 Pura 90、nova 16 等系列](https://finance.sina.com.cn/tech/digi/2026-06-03/doc-inhzzumi1455021.shtml) `23:35`
-- [Meta 青少年内容管控措施将扩大至全球，账号默认开启过滤机制](https://finance.sina.com.cn/tech/digi/2026-06-03/doc-inhzzumk4660743.shtml) `23:13`
-- [华为 nova 16 系列手机星闪能力公布，Pro / Ultra 还能连手写笔](https://finance.sina.com.cn/tech/digi/2026-06-03/doc-inhzzumh2972754.shtml) `22:48`
-- [内存涨价拖累手机销量，UBI Research 下调今年全球 OLED 材料需求预期](https://finance.sina.com.cn/tech/digi/2026-06-03/doc-inhzzumn1426026.shtml) `22:38`
-- [英伟达黄仁勋大赞 SK 海力士：我为 SK 的成功而自豪](https://finance.sina.com.cn/tech/digi/2026-06-03/doc-inhzzumi1435813.shtml) `22:26`
-- [Anthropic：将向 150 家合作机构开放 Mythos 网络安全模型访问权限](https://finance.sina.com.cn/tech/digi/2026-06-03/doc-inhzzumn1426044.shtml) `22:25`
-- [华为亮出矿鸿 5 年成绩单：认证设备累计达到 935 款，生态伙伴超过 200 家](https://finance.sina.com.cn/tech/digi/2026-06-03/doc-inhzzumi1430682.shtml) `22:08`
-- [消息称红杉资本将收购徕卡相机公司，估值 10 亿欧元并考虑重新上市](https://finance.sina.com.cn/tech/digi/2026-06-03/doc-inhzzumh2951941.shtml) `21:47`
-- [投资者质疑巨额支出能否回本，OpenAI 奥尔特曼称“这是对 AI 最公平的批评”](https://finance.sina.com.cn/tech/digi/2026-06-03/doc-inhzzqcm1538502.shtml) `21:18`
-- [消息称 SpaceX 要求投行降低 IPO 承销费率，压低至 0.75% 以下](https://finance.sina.com.cn/tech/digi/2026-06-03/doc-inhzzqck3071107.shtml) `21:13`
-  > ... 还有 78 条
-
-**宏观政策** (166 条)：
-- [2026小明机器人杯围乙冲甲格局解析 名将云集竞争升级](https://sports.sina.com.cn/go/2026-06-02/doc-inhzzumh2978753.shtml) `23:18`
-- [高温骤雨赛车时 MOGAN Team TDK珠海双线告捷](https://sports.sina.com.cn/motorracing/chinaracing/chinacd/2026-06-02/doc-inhzzumn1428455.shtml) `22:47`
-- [2026“智弈中轴线杯”全国青少年围棋棋王赛竞赛规程](https://sports.sina.com.cn/go/2026-06-03/doc-iniacnup0866388.shtml) `19:59`
-- [上海高校校友高尔夫联盟2026上半年度团体赛圆满落幕](https://sports.sina.com.cn/golf/industry/2026-06-02/doc-inhzzivq4804119.shtml) `18:30`
-- [巴拿马大名单：戈多伊领衔 穆里略在列](https://sports.sina.com.cn/l/2026-06-02/doc-inhzzcpu1662797.shtml) `16:55`
-- [加纳大名单：塞门约领衔 帕尔特伊在列](https://sports.sina.com.cn/l/2026-06-02/doc-inhzzcpq3217583.shtml) `16:52`
-- [克罗地亚大名单：莫德里奇领衔 格瓦迪奥尔在列](https://sports.sina.com.cn/l/2026-06-02/doc-inhzzcpr1683844.shtml) `16:49`
-- [英格兰大名单：凯恩领衔 福登帕尔默阿诺德落选](https://sports.sina.com.cn/l/2026-06-02/doc-inhzzcpr1681295.shtml) `16:32`
-- [哥伦比亚大名单：J罗领衔 路易斯迪亚斯在列](https://sports.sina.com.cn/l/2026-06-02/doc-inhzzcpr1672328.shtml) `16:28`
-- [民主刚果大名单：万比萨卡领衔 国安旧将巴坎布在列](https://sports.sina.com.cn/l/2026-06-02/doc-inhzzcps4859058.shtml) `16:13`
-  > ... 还有 156 条
-
 ## 数据文件
-- [[2-wiki/data/news/news_master.json]] — 完整新闻数据（8094 条）
+- [[2-wiki/data/news/news_master.json]] — 完整新闻数据（8010 条）
